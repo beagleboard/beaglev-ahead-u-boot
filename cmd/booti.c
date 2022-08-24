@@ -97,6 +97,42 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	return ret;
 }
 
+/*******************************************************************/
+/* sboot - boot security image */
+/*******************************************************************/
+#ifdef CONFIG_TARGET_LIGHT_C910
+extern int light_boot(int argc, char * const argv[]);
+
+int do_sboot(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (light_boot(argc, argv) < 0)
+		return -1;
+
+	return do_booti(cmdtp, flag, argc, argv);
+}
+
+U_BOOT_CMD(
+	sboot,	CONFIG_SYS_MAXARGS,	1,	do_sboot,
+	"boot application image from memory, run 'sboot $kernel_addr $rootfs_addr $dtb_addr'",
+	""
+);
+
+extern int light_vimage(int argc, char *const argv[]);
+int do_vimage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (light_vimage(argc, argv) < 0)
+		return -1;
+	return 0;
+}
+
+U_BOOT_CMD(
+	vimage, CONFIG_SYS_MAXARGS, 1, do_vimage, 
+	"verify image file with known pubkey which reside in father image or itself!", 
+	"vimage addr imgname[[tee/tf]	- verify specifed image resides in addr\n"
+);
+
+#endif
+
 #ifdef CONFIG_SYS_LONGHELP
 static char booti_help_text[] =
 	"[addr [initrd[:size]] [fdt]]\n"

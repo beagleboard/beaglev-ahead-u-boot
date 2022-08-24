@@ -38,6 +38,9 @@ static void sdhci_reset(struct sdhci_host *host, u8 mask)
 		timeout--;
 		udelay(1000);
 	}
+#ifdef CONFIG_TARGET_LIGHT_C910
+	mdelay(50);
+#endif
 }
 
 static void sdhci_cmd_done(struct sdhci_host *host, struct mmc_cmd *cmd)
@@ -194,8 +197,9 @@ static int sdhci_transfer_data(struct sdhci_host *host, struct mmc_data *data)
 	do {
 		stat = sdhci_readl(host, SDHCI_INT_STATUS);
 		if (stat & SDHCI_INT_ERROR) {
-			pr_debug("%s: Error detected in status(0x%X)!\n",
+			pr_err("%s: Error detected in status(0x%X)!\n",
 				 __func__, stat);
+
 			return -EIO;
 		}
 		if (!transfer_done && (stat & rdy)) {
@@ -555,6 +559,37 @@ void sdhci_set_uhs_timing(struct sdhci_host *host)
 	case UHS_SDR104:
 	case MMC_HS_200:
 		reg |= SDHCI_CTRL_UHS_SDR104;
+		break;
+	default:
+		reg |= SDHCI_CTRL_UHS_SDR12;
+	}
+
+	sdhci_writew(host, reg, SDHCI_HOST_CONTROL2);
+}
+
+void sdhci_set_timing(struct mmc *mmc)
+{
+	u32 reg;
+	struct sdhci_host *host = mmc->priv;
+
+	reg = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+	reg &= ~SDHCI_CTRL_UHS_MASK;
+
+	switch (mmc->selected_mode) {
+	case UHS_SDR50:
+	case MMC_HS_52:
+		reg |= SDHCI_CTRL_UHS_SDR50;
+		break;
+	case UHS_DDR50:
+	case MMC_DDR_52:
+		reg |= SDHCI_CTRL_UHS_DDR50;
+		break;
+	case UHS_SDR104:
+	case MMC_HS_200:
+		reg |= SDHCI_CTRL_UHS_SDR104;
+		break;
+	case MMC_HS:
+		reg |= SDHCI_CTRL_UHS_SDR25;
 		break;
 	default:
 		reg |= SDHCI_CTRL_UHS_SDR12;

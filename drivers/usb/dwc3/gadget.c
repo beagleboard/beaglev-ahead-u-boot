@@ -297,6 +297,10 @@ int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
 	u32			timeout = 500;
 	u32			reg;
 
+	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(ep));
+	reg &= ~(1 << 6);
+	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(ep), reg);
+
 	dwc3_writel(dwc->regs, DWC3_DEPCMDPAR0(ep), params->param0);
 	dwc3_writel(dwc->regs, DWC3_DEPCMDPAR1(ep), params->param1);
 	dwc3_writel(dwc->regs, DWC3_DEPCMDPAR2(ep), params->param2);
@@ -307,6 +311,11 @@ int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
 		if (!(reg & DWC3_DEPCMD_CMDACT)) {
 			dev_vdbg(dwc->dev, "Command Complete --> %d\n",
 					DWC3_DEPCMD_STATUS(reg));
+
+			reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(ep));
+			reg |= (1 << 6);
+			dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(ep), reg);
+
 			return 0;
 		}
 
@@ -318,7 +327,7 @@ int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
 		if (!timeout)
 			return -ETIMEDOUT;
 
-		udelay(1);
+		mdelay(1);
 	} while (1);
 }
 

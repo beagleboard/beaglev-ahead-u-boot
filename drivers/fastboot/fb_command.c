@@ -13,6 +13,8 @@
 #include <part.h>
 #include <stdlib.h>
 
+#define BLOCK_SIZE 512
+
 /**
  * image_size - final fastboot image size
  */
@@ -268,7 +270,83 @@ void fastboot_data_complete(char *response)
  */
 static void flash(char *cmd_parameter, char *response)
 {
+#ifdef THEAD_LIGHT_FASTBOOT
+	char cmdbuf[32];
+	u32 block_cnt;
+	struct blk_desc *dev_desc;
+
+	if (strcmp(cmd_parameter, "uboot") == 0) {
+		dev_desc = blk_get_dev("mmc", CONFIG_FASTBOOT_FLASH_MMC_DEV);
+                if (!dev_desc || dev_desc->type == DEV_TYPE_UNKNOWN) {
+                        fastboot_fail("invalid mmc device", response);
+                        return;
+                }
+
+		run_command("mmc partconf 0 1 0 1", 0);
+
+		block_cnt = image_size / BLOCK_SIZE;
+		if (image_size % BLOCK_SIZE)
+			block_cnt = block_cnt +1;
+
+		sprintf(cmdbuf, "mmc write 0x%p 0 %x", fastboot_buf_addr, block_cnt);
+
+		run_command(cmdbuf, 0);
+		run_command("mmc partconf 0 1 0 0", 0);
+
+	} else if ((strcmp(cmd_parameter, "fw") == 0)) {
+		memcpy((void *)LIGHT_FW_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "uImage") == 0)) {
+		memcpy((void *)LIGHT_KERNEL_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "dtb") == 0)) {
+		memcpy((void *)LIGHT_DTB_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "rootfs") == 0)) {
+		memcpy((void *)LIGHT_ROOTFS_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "aon") == 0)) {
+		memcpy((void *)LIGHT_AON_FW_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "tf") == 0)) {
+		memcpy((void *)LIGHT_TF_FW_ADDR, fastboot_buf_addr, image_size);
+	} else if ((strcmp(cmd_parameter, "tee") == 0)) {
+		memcpy((void *)LIGHT_TEE_FW_ADDR, fastboot_buf_addr, image_size);
+	}
+
+	if(strcmp(cmd_parameter, "uboot") == 0 || (strcmp(cmd_parameter, "fw") == 0) ||
+	   (strcmp(cmd_parameter, "uImage") == 0) || (strcmp(cmd_parameter, "dtb") == 0) ||
+	   (strcmp(cmd_parameter, "rootfs") == 0) || (strcmp(cmd_parameter, "aon") == 0)) {
+		fastboot_okay(NULL, response);
+		return;
+	}
+#endif
+
+#if CONFIG_IS_ENABLED(LIGHT_SEC_UPGRADE)
+	if(strcmp(cmd_parameter, "stashtf") == 0) {
+		fastboot_okay(NULL, response);
+		#if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
+		printf("cmd_parameter: %s, imagesize: %d\n", cmd_parameter, image_size);
+		fastboot_mmc_flash_write(cmd_parameter, fastboot_buf_addr, image_size,
+					response);
+		#endif
+		
+		/* set secure upgrade flag to indicate it is TF image upgrade*/
+		run_command("env set sec_upgrade_mode 0x5555aaaa", 0);
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+	} else if (strcmp(cmd_parameter, "stashtee") == 0) {
+		fastboot_okay(NULL, response);
+		#if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
+		printf("cmd_parameter: %s, imagesize: %d\n", cmd_parameter, image_size);
+		fastboot_mmc_flash_write(cmd_parameter, fastboot_buf_addr, image_size,
+					response);
+		#endif
+		
+		/* set secure upgrade flag to indicate it is TF image upgrade*/
+		run_command("env set sec_upgrade_mode 0x5a5aa5a5", 0);
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+	}
+#endif
+
 #if CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC)
+	printf("cmd_parameter: %s, imagesize: %d\n", cmd_parameter, image_size);
 	fastboot_mmc_flash_write(cmd_parameter, fastboot_buf_addr, image_size,
 				 response);
 #endif
