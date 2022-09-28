@@ -72,6 +72,10 @@ config TARGET_LIGHT_FM_C910_VAL_ANT_DISCRETE
     bool "light fullmask for ant-evt board "
     default n
 
+config TARGET_LIGHT_FM_C910_BEAGLE
+    bool "light fullmask for beagle board "
+    default n
+
 config SYS_TEXT_BASE
     default 0xc0000000 if RISCV_MMODE
     default 0x00200000 if RISCV_SMODE
