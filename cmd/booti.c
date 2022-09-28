@@ -101,27 +101,13 @@ int do_booti(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 /* sboot - boot security image */
 /*******************************************************************/
 #ifdef CONFIG_TARGET_LIGHT_C910
-extern int light_boot(int argc, char * const argv[]);
 
-int do_sboot(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	if (light_boot(argc, argv) < 0)
-		return -1;
-
-	return do_booti(cmdtp, flag, argc, argv);
-}
-
-U_BOOT_CMD(
-	sboot,	CONFIG_SYS_MAXARGS,	1,	do_sboot,
-	"boot application image from memory, run 'sboot $kernel_addr $rootfs_addr $dtb_addr'",
-	""
-);
-
+#if CONFIG_IS_ENABLED(LIGHT_SEC_UPGRADE)
 extern int light_vimage(int argc, char *const argv[]);
 int do_vimage(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
-	if (light_vimage(argc, argv) < 0)
-		return -1;
+	if (light_vimage(argc, argv) != 0)
+		return 1;
 	return 0;
 }
 
@@ -130,6 +116,25 @@ U_BOOT_CMD(
 	"verify image file with known pubkey which reside in father image or itself!", 
 	"vimage addr imgname[[tee/tf]	- verify specifed image resides in addr\n"
 );
+
+#endif
+
+#if CONFIG_IS_ENABLED(LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A) || CONFIG_IS_ENABLED(LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B) || CONFIG_IS_ENABLED(LIGHT_SEC_BOOT_WITH_VERIFY_ANT_EVT)
+extern int light_secboot(int argc, char * const argv[]);
+int do_secboot(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+	if (light_secboot(argc, argv) != 0)
+		return -1;
+
+	return 0;
+}
+U_BOOT_CMD(
+	secboot, CONFIG_SYS_MAXARGS, 1, do_secboot, 
+	"verify image file with known pubkey which reside in father image or itself!", 
+	"vimage addr imgname[[tee/tf]	- verify specifed image resides in addr\n"
+);
+
+#endif
 
 #endif
 

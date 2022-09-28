@@ -26,6 +26,18 @@
 #include <stdlib.h>
 #include "queue.h"
 
+//#define DEBUG
+#ifdef DEBUG
+#define CHECK_RESULT
+#endif
+
+#ifdef CHECK_RESULT
+static bool checked = true;
+#else
+static bool checked = false;
+#endif
+
+#define FIXED_RANGE 0x100000 // write fixed range for prbs_31 only
 
 #define BYTE_PER_CACHELINE 64
 #define BIT_PER_BYTE 8
@@ -131,6 +143,9 @@ unsigned int _generate_prbs_neg_all(unsigned int pos, unsigned int bit_value) {
 #ifdef CONFIG_DDR_CHBIT_256B
 //#define DDR_PHY0_ONLY
 #define DDR_PHY1_ONLY
+#define MULTIPLY 2
+#else
+#define MULTIPLY 1
 #endif
 
 int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq, bool need_check) {
@@ -145,22 +160,27 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
     unsigned int *p1;
     unsigned int tmp;
     unsigned int dq_cnt = 32;
+    bool fixed_range = false;
     ulong ddr_density = get_ddr_density();
 
     printf("prbs name: %s\n", prbs->name);
     printf("prbs bit_len: %d\n", bit_len);
     printf("prbs init_cnt: %d\n", init_cnt);
     printf("prbs exp_cnt: %d\n", exp_cnt);
-    
+
+    if (strcmp(prbs->name, "prbs_31") == 0)
+        fixed_range = true; // not enough space for prbs_31 incr range mode
+
     //Queue* queue = NULL;
     Queue* (queue[dq_cnt]);
-    for (i = 0; i < dq_cnt; i++)
+    for (i = 0; i < dq_cnt; i++) {
         queue[i] = Queue_Init(OnQueueIncreasedEvent);
         if (queue[i] == NULL) {
             printf("ERROR: fail to Queue_Init queue[%d]\n", i);
             return -1;
         }
-    
+    }
+
     // fill queue with init_value
     for (i = 0; i < init_cnt; i++) {
         printf("prbs init_value[%d]: %d\n", init_cnt-i-1, init_value[init_cnt-i-1]);
@@ -193,7 +213,10 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
     p1 = buf;
     u64 bit_cnt = 0;
     for (i = 0; i < bit_len; i++) {
-        if ((bit_cnt++ % (ddr_density/4/2)) == 0)
+        bit_cnt++;
+        if (fixed_range && ((bit_cnt % FIXED_RANGE) == 0))
+            p1 = buf; // reset ptr to beginning
+        else if ((bit_cnt % (ddr_density/4/2)) == 0)
             p1 = buf; // reset ptr to beginning
         bit_value = 0;
         for (j = 0; j < dq_cnt; j++) {
@@ -208,13 +231,17 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
         }
         pattern = bit_value;
         //pattern = _generate_prbs_pos(pos, bit_value);
+#ifdef DEBUG
         printf("bit[%d]: val<0x%x>, addr<0x%lx>, write pos pattern: 0x%x\n", bit_len-i-1, bit_value, (ulong)p1, pattern);
+#endif
 	*p1++ = pattern;
 	// flush cache after write
 	if(((ulong)p1 - (ulong)buf) % BYTE_PER_CACHELINE == 0)
 	{
 	    flush_dcache_range((ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
-	    printf("flush cache start<0x%lx>, end<0x%lx>\n", (ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
+#ifdef DEBUG
+            printf("flush cache start<0x%lx>, end<0x%lx>\n", (ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
+#endif
 	}
 #if defined(DDR_PHY0_ONLY) || defined(DDR_PHY1_ONLY)
 	if(((ulong)p1 - (ulong)buf) % (BYTE_PER_INTERLEAVE/2) == 0)
@@ -226,7 +253,10 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
         
     }
     for (i = 0; i < bit_len; i++) {
-        if ((bit_cnt++ % (ddr_density/4/2)) == 0)
+        bit_cnt++;
+        if (fixed_range && ((bit_cnt % FIXED_RANGE) == 0))
+            p1 = buf; // reset ptr to beginning
+        else if ((bit_cnt % (ddr_density/4/2)) == 0)
             p1 = buf; // reset ptr to beginning
         bit_value = 0;
         for (j = 0; j < dq_cnt; j++) {
@@ -240,13 +270,17 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
             bit_value |= Queue_GetFromTail(queue[j]) << j;
         }
         pattern = _generate_prbs_neg(pos, bit_value);
+#ifdef DEBUG
         printf("bit[%d]: val<0x%x>, addr<0x%lx>, write neg pattern: 0x%x\n", bit_len-i-1, bit_value, (ulong)p1, pattern);
-	*p1++ = pattern;
+#endif
+        *p1++ = pattern;
 	// flush cache after write
 	if(((ulong)p1 - (ulong)buf) % BYTE_PER_CACHELINE == 0)
 	{
 	    flush_dcache_range((ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
-	    printf("flush cache start<0x%lx>, end<0x%lx>\n", (ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
+#ifdef DEBUG
+            printf("flush cache start<0x%lx>, end<0x%lx>\n", (ulong)p1-BYTE_PER_CACHELINE, (ulong)p1-1);
+#endif
 	}
 #if defined(DDR_PHY0_ONLY) || defined(DDR_PHY1_ONLY)
 	if(((ulong)p1 - (ulong)buf) % (BYTE_PER_INTERLEAVE/2) == 0)
@@ -260,7 +294,9 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
     if((ulong)p1 % BYTE_PER_CACHELINE != 0)
     {
         flush_dcache_range((ulong)p1&(~(BYTE_PER_CACHELINE-1)), (ulong)p1-1);
+#ifdef DEBUG
         printf("flush cache start<0x%lx>, end<0x%lx>\n", (ulong)p1&(~(BYTE_PER_CACHELINE-1)), (ulong)p1-1);
+#endif
     }
 
     if (!need_check)
@@ -273,7 +309,10 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
     p1 = buf;
     bit_cnt = 0;
     for (i = 0; i < bit_len; i++) {
-        if ((bit_cnt++ % (ddr_density/4/2)) == 0)
+        bit_cnt++;
+        if (fixed_range && ((bit_cnt % FIXED_RANGE) == 0))
+            p1 = buf; // reset ptr to beginning
+        else if ((bit_cnt % (ddr_density/4/2)) == 0)
             p1 = buf; // reset ptr to beginning
         bit_value = 0;
         for (j = 0; j < dq_cnt; j++) {
@@ -302,7 +341,10 @@ int prbs_test(struct PRBS_ELE *prbs, unsigned int *buf, int pos, bool random_dq,
 #endif
     }
     for (i = 0; i < bit_len; i++) {
-        if ((bit_cnt++ % (ddr_density/4/2)) == 0)
+        bit_cnt++;
+        if (fixed_range && ((bit_cnt % FIXED_RANGE) == 0))
+            p1 = buf; // reset ptr to beginning
+        else if ((bit_cnt % (ddr_density/4/2)) == 0)
             p1 = buf; // reset ptr to beginning
         bit_value = 0;
         for (j = 0; j < dq_cnt; j++) {
@@ -346,7 +388,7 @@ static int do_prbs7_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	ulong iter = 1;
 	ulong random_dq = 1;
 	ulong i;
-	ulong range = (1 << 7) *4 *2 *2; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
+	ulong range = (1 << 7) *4 *2 *MULTIPLY; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
 
 	if (argc != 4 && argc != 5) {
 		printf("should be 4 input parameters!!!");
@@ -387,7 +429,7 @@ static int do_prbs7_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 	    printf("prbs7 test itration<%ld>\n", i);
 	    riscv_get_time(&t_begin);
-	    prbs_test(&prbs7, buf, (int)pos, (random_dq!=0), true);
+	    prbs_test(&prbs7, buf, (int)pos, (random_dq!=0), checked);
 	    riscv_get_time(&t_end);
 	    printf("it spends %lld ms to do prbs7 sequence\n", (t_end - t_begin)/TIMER_TICK_MS);
 	}
@@ -405,7 +447,7 @@ static int do_prbs15_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	ulong iter = 1;
 	ulong random_dq = 1;
 	ulong i;
-	ulong range = (1 << 15) *4 *2 *2; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
+	ulong range = (1 << 15) *4 *2 *MULTIPLY; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
 
 	if (argc != 4 && argc != 5) {
 		printf("should be 4 input parameters!!!");
@@ -446,7 +488,7 @@ static int do_prbs15_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 	    printf("prbs15 test itration<%ld>\n", i);
 	    riscv_get_time(&t_begin);
-	    prbs_test(&prbs15, buf, (int)pos, (random_dq!=0), true);
+	    prbs_test(&prbs15, buf, (int)pos, (random_dq!=0), checked);
 	    riscv_get_time(&t_end);
 	    printf("it spends %lld ms to do prbs15 sequence\n", (t_end - t_begin)/TIMER_TICK_MS);
 	}
@@ -463,7 +505,7 @@ static int do_prbs23_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	ulong iter = 1;
 	ulong random_dq = 1;
 	ulong i;
-	ulong range = (1 << 23) *4 *2 *2; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
+	ulong range = (1 << 23) *4 *2 *MULTIPLY; // occupys 4byte per bit, positive & negative, PHY0 & PHY1 space
 
 	if (argc != 4 && argc != 5) {
 		printf("should be 4 input parameters!!!");
@@ -504,7 +546,7 @@ static int do_prbs23_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	{
 	    printf("prbs23 test itration<%ld>\n", i);
 	    riscv_get_time(&t_begin);
-	    prbs_test(&prbs23, buf, (int)pos, (random_dq!=0), true);
+	    prbs_test(&prbs23, buf, (int)pos, (random_dq!=0), checked);
 	    riscv_get_time(&t_end);
 	    printf("it spends %lld ms to do prbs23 sequence\n", (t_end - t_begin)/TIMER_TICK_MS);
 	}
@@ -526,6 +568,8 @@ static int do_prbs31_sequence_test(cmd_tbl_t *cmdtp, int flag, int argc,
 	// too large to store prbs31 patterns in DDR space, mmap 4GB and wrap write is allowed
 	if (range > ddr_density)
 		range = ddr_density;
+
+	range = FIXED_RANGE; // FIXED_RANGE for prbs_31
 
 	if (argc != 4 && argc != 5) {
 		printf("should be 4 input parameters!!!");

@@ -16,6 +16,95 @@
 #define ap_base		((void __iomem *)0xffff011000)
 #define aon_base         ((void __iomem *)0xfffff46000)
 
+#define AP_REE_CLKGEN_BASE	(0xffef010000)
+#define AP_DPU0_PLL_CFG1	(AP_REE_CLKGEN_BASE + 0x44)
+#define AP_DPU1_PLL_CFG1	(AP_REE_CLKGEN_BASE + 0x54)
+#define AP_PERI_CLK_CFG		(AP_REE_CLKGEN_BASE + 0x204)
+#define AP_CTRL_CLK_CFG		(AP_REE_CLKGEN_BASE + 0x208)
+
+#define MISCSYS_TEE_REG_BASE		(0xfffc02d000)
+#define MISCSYS_TEE_CLK_CTRL_TEE	(MISCSYS_TEE_REG_BASE + 0x120)
+
+/* VOSYS_SYREG_R */
+#define VOSYS_SYSREG_BASE	(0xffef528000)
+#define VOSYS_CLK_GATE_REG	(VOSYS_SYSREG_BASE + 0x50)
+#define VOSYS_CLK_GATE1_REG	(VOSYS_SYSREG_BASE + 0x54)
+
+/* AP_DPU0_PLL_CFG1 */
+#define AP_DPU0_PLL_RST		BIT(29)
+
+/* AP_DPU1_PLL_CFG1 */
+#define AP_DPU1_PLL_RST		BIT(29)
+
+/* AP_PERI_CLK_CFG */
+#define GMAC1_CLK_EN		BIT(26)
+#define PADCTRL1_APSYS_PCLK_EN	BIT(24)
+#define DSMART_CLK_EN		BIT(23)
+#define PADCTRL0_APSYS_PCLK_EN  BIT(22)
+#define GMAC_AXI_CLK_EN		BIT(21)
+#define GPIO3_CLK_EN		BIT(20)
+#define GMAC0_CLK_EN            BIT(19)
+#define PWM_CLK_EN		BIT(18)
+#define QSPI0_CLK_EN		BIT(17)
+#define QSPI1_CLK_EN		BIT(16)
+#define SPI_CLK_EN		BIT(15)
+#define UART0_CLK_EN		BIT(14)
+#define UART1_CLK_EN            BIT(13)
+#define UART2_CLK_EN            BIT(12)
+#define UART3_CLK_EN            BIT(11)
+#define UART4_CLK_EN            BIT(10)
+#define UART5_CLK_EN            BIT(9)
+#define GPIO0_CLK_EN            BIT(8)
+#define GPIO1_CLK_EN            BIT(7)
+#define GPIO2_CLK_EN            BIT(6)
+#define I2C0_CLK_EN		BIT(5)
+#define I2C1_CLK_EN             BIT(4)
+#define I2C2_CLK_EN             BIT(3)
+#define I2C3_CLK_EN             BIT(2)
+#define I2C4_CLK_EN             BIT(1)
+#define I2C5_CLK_EN             BIT(0)
+
+/* AP_CTRL_CLK_CFG */
+#define SPINLOCK_CLK_EN		BIT(10)
+#define CHIP_DBG_CLK_EN		BIT(9)
+#define DMAC_CPUSYS_CLK_EN	BIT(8)
+#define MBOX0_PCLK_EN		BIT(7)
+#define MBOX1_PCLK_EN           BIT(6)
+#define MBOX2_PCLK_EN           BIT(5)
+#define MBOX3_PCLK_EN           BIT(4)
+#define WDT0_CLK_EN		BIT(3)
+#define WDT1_CLK_EN		BIT(2)
+#define TIMER0_CLK_EN		BIT(1)
+#define TIMER1_CLK_EN		BIT(0)
+
+/* MISCSYS_TEE_CLK_CTRL_TEE */
+#define TEE_DMAC_CLK_EN		BIT(6)
+
+/* VOSYS_CLK_GATE_REG */
+#define CLKCTRL_DPU_PIXELCLK0_EN	BIT(5)
+#define CLKCTRL_DPU_PIXELCLK1_EN        BIT(6)
+#define CLKCTRL_DPU_HCLK_EN		BIT(7)
+#define CLKCTRL_DPU_ACLK_EN             BIT(8)
+#define CLKCTRL_DPU_CCLK_EN             BIT(9)
+
+#define CLKCTRL_HDMI_SFR_CLK_EN		BIT(10)
+#define CLKCTRL_HDMI_PCLK_EN		BIT(11)
+#define CLKCTRL_HDMI_CEC_CLK_EN		BIT(12)
+#define CLKCTRL_HDMI_I2S_CLK_EN		BIT(19)
+
+#define CLKCTRL_MIPI_DSI0_PCLK_EN	BIT(13)
+#define CLKCTRL_MIPI_DSI0_CFG_CLK_EN	BIT(15)
+#define CLKCTRL_MIPI_DSI0_REFCLK_EN     BIT(17)
+#define CLKCTRL_MIPIDSI0_PIXCLK_EN      BIT(30)
+
+#define CLKCTRL_MIPI_DSI1_PCLK_EN	BIT(14)
+#define CLKCTRL_MIPI_DSI1_CFG_CLK_EN	BIT(16)
+#define CLKCTRL_MIPI_DSI1_REFCLK_EN     BIT(18)
+#define CLKCTRL_MIPIDSI1_PIXCLK_EN      BIT(31)
+
+/* VOSYS_CLK_GATE1_REG */
+#define CLKCTRL_HDMI_PIXCLK_EN		BIT(0)
+
 #define C910_CCLK	0
 #define C910_CCLK_I0	1
 #define CLK_END		16
@@ -913,6 +1002,92 @@ int clk_light_set_rate(const char *clk_name, enum clk_device_type clk_dev_type, 
 	return ret;
 }
 
+/* disable some modules' clk that will not work in u-boot phase */
+void ap_peri_clk_disable(void)
+{
+	unsigned int clk_cfg;
+
+#if (defined CONFIG_TARGET_LIGHT_FM_C910_VAL_B) || (defined CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_EVT) || (defined CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_DISCRETE)
+	clk_cfg = readl((void __iomem *)AP_PERI_CLK_CFG);
+	clk_cfg &= ~(GMAC1_CLK_EN);
+	writel(clk_cfg, (void __iomem *)AP_PERI_CLK_CFG);
+#endif
+
+	clk_cfg = readl((void __iomem *)MISCSYS_TEE_CLK_CTRL_TEE);
+	clk_cfg &= ~(TEE_DMAC_CLK_EN);
+	writel(clk_cfg, (void __iomem *)MISCSYS_TEE_CLK_CTRL_TEE);
+}
+
+void ap_dpu_clk_endisable(bool en)
+{
+	unsigned int cfg = readl((void __iomem *)VOSYS_CLK_GATE_REG);
+
+	if (en)
+		cfg |= (CLKCTRL_DPU_PIXELCLK0_EN | CLKCTRL_DPU_PIXELCLK1_EN | CLKCTRL_DPU_HCLK_EN |
+				CLKCTRL_DPU_ACLK_EN | CLKCTRL_DPU_CCLK_EN);
+	else
+		cfg &= ~(CLKCTRL_DPU_PIXELCLK0_EN | CLKCTRL_DPU_PIXELCLK1_EN | CLKCTRL_DPU_HCLK_EN |
+				CLKCTRL_DPU_ACLK_EN | CLKCTRL_DPU_CCLK_EN);
+
+	writel(cfg, (void __iomem *)VOSYS_CLK_GATE_REG);
+}
+
+void ap_hdmi_clk_endisable(bool en)
+{
+	unsigned int cfg = readl((void __iomem *)VOSYS_CLK_GATE_REG);
+	unsigned int cfg1 = readl((void __iomem *)VOSYS_CLK_GATE1_REG);
+
+	if (en) {
+		cfg |= (CLKCTRL_HDMI_SFR_CLK_EN | CLKCTRL_HDMI_PCLK_EN | CLKCTRL_HDMI_CEC_CLK_EN |
+				CLKCTRL_HDMI_I2S_CLK_EN);
+		cfg1 |= CLKCTRL_HDMI_PIXCLK_EN;
+	} else {
+		cfg &= ~(CLKCTRL_HDMI_SFR_CLK_EN | CLKCTRL_HDMI_PCLK_EN | CLKCTRL_HDMI_CEC_CLK_EN |
+				CLKCTRL_HDMI_I2S_CLK_EN);
+		cfg1 &= ~CLKCTRL_HDMI_PIXCLK_EN;
+	}
+
+	writel(cfg, (void __iomem *)VOSYS_CLK_GATE_REG);
+	writel(cfg1, (void __iomem *)VOSYS_CLK_GATE1_REG);
+}
+
+void ap_mipi_dsi0_clk_endisable(bool en)
+{
+	unsigned int cfg = readl((void __iomem *)VOSYS_CLK_GATE_REG);
+	unsigned int cfg1 = readl((void __iomem *)AP_DPU0_PLL_CFG1);
+
+	if (en) {
+		cfg |= (CLKCTRL_MIPI_DSI0_PCLK_EN | CLKCTRL_MIPI_DSI0_CFG_CLK_EN | CLKCTRL_MIPI_DSI0_REFCLK_EN |
+				CLKCTRL_MIPIDSI0_PIXCLK_EN);
+		cfg1 &= ~AP_DPU0_PLL_RST;
+	} else {
+		cfg &= ~(CLKCTRL_MIPI_DSI0_PCLK_EN | CLKCTRL_MIPI_DSI0_CFG_CLK_EN | CLKCTRL_MIPI_DSI0_REFCLK_EN |
+				CLKCTRL_MIPIDSI0_PIXCLK_EN);
+		cfg1 |= AP_DPU0_PLL_RST;
+	}
+
+	writel(cfg, (void __iomem *)VOSYS_CLK_GATE_REG);
+	writel(cfg1, (void __iomem *)AP_DPU0_PLL_CFG1);
+}
+
+void ap_mipi_dsi1_clk_endisable(bool en)
+{
+	unsigned int cfg = readl((void __iomem *)VOSYS_CLK_GATE_REG);
+	unsigned int cfg1 = readl((void __iomem *)AP_DPU1_PLL_CFG1);
+
+	if (en) {
+		cfg |= (CLKCTRL_MIPI_DSI1_PCLK_EN | CLKCTRL_MIPI_DSI1_CFG_CLK_EN | CLKCTRL_MIPI_DSI1_REFCLK_EN |
+				CLKCTRL_MIPIDSI1_PIXCLK_EN);
+		cfg1 &= ~AP_DPU1_PLL_RST;
+	} else {
+		cfg &= ~(CLKCTRL_MIPI_DSI1_PCLK_EN | CLKCTRL_MIPI_DSI1_CFG_CLK_EN | CLKCTRL_MIPI_DSI1_REFCLK_EN |
+				CLKCTRL_MIPIDSI1_PIXCLK_EN);
+		cfg1 |= AP_DPU1_PLL_RST;
+	}
+
+	writel(cfg, (void __iomem *)VOSYS_CLK_GATE_REG);
+	writel(cfg1, (void __iomem *)AP_DPU1_PLL_CFG1);
+}
 
 int clk_config(void)
 {
@@ -1003,6 +1178,8 @@ int clk_config(void)
 	if (ret)
 		return ret;
 #endif
+	ap_hdmi_clk_endisable(false);
+	ap_mipi_dsi1_clk_endisable(false);
 
 	return 0;
 }

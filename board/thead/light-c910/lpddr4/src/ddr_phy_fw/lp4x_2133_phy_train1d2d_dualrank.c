@@ -34412,6 +34412,9 @@ for(i=0;i<830;i++) ddr_phy_reg_wr(0x54000+i,dccm_array[i]);
 #ifdef CONFIG_DDR_MSG
 ddr_phy_reg_wr(0x54009,0x4);
 #endif
+#ifdef CONFIG_DDR_HARD_2D
+ddr_phy_reg_wr(0x54007,0x18);
+#endif
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0099,0x9);
@@ -34429,12 +34432,32 @@ ddr_phy_reg_wr(0xd0099,0x1);
 ddr_phy_reg_wr(0xd0000,0x0);
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0000,0x0);
+#ifdef CONFIG_DDR_MSG
+printf("CHA CDD RR01 %0x, RR10 %0x\n",0xff&ddr_phy_reg_rd(0x54013),0xff&(ddr_phy_reg_rd(0x54013)>>8));
+printf("CHA CDD RW11 %0x, RW10 %0x\n",0xff&ddr_phy_reg_rd(0x54014),0xff&(ddr_phy_reg_rd(0x54014)>>8));
+printf("CHA CDD RW01 %0x, RW00 %0x\n",0xff&ddr_phy_reg_rd(0x54015),0xff&(ddr_phy_reg_rd(0x54015)>>8));
+printf("CHA CDD WR11 %0x, WR10 %0x\n",0xff&ddr_phy_reg_rd(0x54016),0xff&(ddr_phy_reg_rd(0x54016)>>8));
+printf("CHA CDD WR01 %0x, WR00 %0x\n",0xff&ddr_phy_reg_rd(0x54017),0xff&(ddr_phy_reg_rd(0x54017)>>8));
+printf("CHA CDD WW01 %0x, WW10 %0x\n",0xff&ddr_phy_reg_rd(0x54018),0xff&(ddr_phy_reg_rd(0x54018)>>8));
+
+printf("CHB CDD RR01 %0x, RR10 %0x\n",0xff&ddr_phy_reg_rd(0x5402d),0xff&(ddr_phy_reg_rd(0x5402c)>>8));
+printf("CHB CDD RW11 %0x, RW10 %0x\n",0xff&ddr_phy_reg_rd(0x5402e),0xff&(ddr_phy_reg_rd(0x5402d)>>8));
+printf("CHB CDD RW01 %0x, RW00 %0x\n",0xff&ddr_phy_reg_rd(0x5402f),0xff&(ddr_phy_reg_rd(0x5402e)>>8));
+printf("CHB CDD WR11 %0x, WR10 %0x\n",0xff&ddr_phy_reg_rd(0x54030),0xff&(ddr_phy_reg_rd(0x5402f)>>8));
+printf("CHB CDD WR01 %0x, WR00 %0x\n",0xff&ddr_phy_reg_rd(0x54031),0xff&(ddr_phy_reg_rd(0x54030)>>8));
+printf("CHB CDD WW01 %0x, WW10 %0x\n",0xff&ddr_phy_reg_rd(0x54032),0xff&(ddr_phy_reg_rd(0x54031)>>8));
+#endif
+
+
 for(i=0;i<16384;i++) ddr_phy_reg_wr(0x50000+i,iccm_array1[i]); 
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0000,0x0);
 for(i=0;i<702;i++) ddr_phy_reg_wr(0x54000+i,dccm_array1[i]); 
 #ifdef CONFIG_DDR_MSG
 ddr_phy_reg_wr(0x54009,0x4);
+#endif
+#ifdef CONFIG_DDR_HARD_2D
+ddr_phy_reg_wr(0x54007,0x18);
 #endif
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0000,0x1);
@@ -34454,6 +34477,30 @@ ddr_phy_reg_wr(0xd0000,0x0);
 #ifndef CONFIG_LPDDR_EYE
 ddr_phy_reg_wr(0xd0000,0x1);
 ddr_phy_reg_wr(0xd0000,0x0);
+#ifdef CONFIG_DDR_MSG
+printf("TrainedVREFDQ_RANK0 is %0x \n",0xff&(ddr_phy_reg_rd(0x54026)>>8));
+printf("TrainedVREFDQ_RANK1 is %0x \n",0xff&(ddr_phy_reg_rd(0x54027)));
+printf("RxClkDly_Margin_A0   is %0x \n",0xff&(ddr_phy_reg_rd(0x54027)>>8));
+printf("VrefDac_Margin_A0    is %0x \n",0xff&(ddr_phy_reg_rd(0x54028)));
+printf("TxDqDly_Margin_A0    is %0x \n",0xff&(ddr_phy_reg_rd(0x54028)>>8));
+printf("DeviceVref_Margin_A0 is %0x \n",0xff&(ddr_phy_reg_rd(0x54029)));
+printf("RxClkDly_Margin_A1   is %0x \n",0xff&(ddr_phy_reg_rd(0x54029)>>8));
+printf("VrefDac_Margin_A1    is %0x \n",0xff&(ddr_phy_reg_rd(0x5402a)));
+printf("TxDqDly_Margin_A1    is %0x \n",0xff&(ddr_phy_reg_rd(0x5402a)>>8));
+printf("DeviceVref_Margin_A1 is %0x \n",0xff&(ddr_phy_reg_rd(0x5402b)));
+
+printf("TrainedVREFDQ_RANK0 is %0x \n",0xff&(ddr_phy_reg_rd(0x54040)));
+printf("TrainedVREFDQ_RANK1 is %0x \n",0xff&(ddr_phy_reg_rd(0x54040)>>8));
+printf("RxClkDly_Margin_A0   is %0x \n",0xff&(ddr_phy_reg_rd(0x54041)));
+printf("VrefDac_Margin_A0    is %0x \n",0xff&(ddr_phy_reg_rd(0x54041)>>8));
+printf("TxDqDly_Margin_A0    is %0x \n",0xff&(ddr_phy_reg_rd(0x54042)));
+printf("DeviceVref_Margin_A0 is %0x \n",0xff&(ddr_phy_reg_rd(0x54042)>>8));
+printf("RxClkDly_Margin_A1   is %0x \n",0xff&(ddr_phy_reg_rd(0x54043)));
+printf("VrefDac_Margin_A1    is %0x \n",0xff&(ddr_phy_reg_rd(0x54043)>>8));
+printf("TxDqDly_Margin_A1    is %0x \n",0xff&(ddr_phy_reg_rd(0x54044)));
+printf("DeviceVref_Margin_A1 is %0x \n",0xff&(ddr_phy_reg_rd(0x54044)>>8));
+#endif
+
 ddr_phy_reg_wr(0x90000,0x10);
 ddr_phy_reg_wr(0x90001,0x400);
 ddr_phy_reg_wr(0x90002,0x10e);

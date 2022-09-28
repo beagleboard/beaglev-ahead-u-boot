@@ -16,3 +16,8 @@ config RISCV_THEAD
 	imply SPL_CPU_SUPPORT
 	imply SPL_OPENSBI
 	imply SPL_LOAD_FIT
+
+config DDR_BOARD_CONFIG
+	bool "DDR info via Board config"
+	help
+		Collect DDR info via Board config.

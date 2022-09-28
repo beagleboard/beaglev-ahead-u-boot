@@ -18,7 +18,7 @@ typedef enum {
 
 int csi_sec_custom_image_verify(unsigned long img_src_addr, unsigned long cur_hdr_addr);
 
-//int csi_sec_image_writer_verify(unsigned long img_src_addr, unsigned long cur_hdr_addr);
+int csi_sec_uboot_image_verify(unsigned long img_src_addr, unsigned long cur_hdr_addr);
 
 int csi_sec_set_boot_stage(boot_stage_t boot_stage);
 

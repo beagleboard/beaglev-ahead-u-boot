@@ -31,6 +31,10 @@
 #define LIGHT_ADC_PHY_CTRL_RST_EN				(0x1 << 4)
 #define LIGHT_ADC_PHY_CTRL_ENADC_EN				(0x1 << 0)
 #define LIGHT_ADC_OP_SINGLE_START_EN				BIT(0)
+
+#define LIGHT_ADC_OP_CONTINOUS_MODE				(0 << 0)
+#define LIGHT_ADC_OP_ONE_SHOT_MODE				(1 << 0)
+
 /* ADC sample data */
 /*
  * In Single mode:
@@ -115,6 +119,7 @@ static void light_adc_start_sampling(void)
 	int phy_ctrl;
 	int cnt2, cnt1;
 	int sample_cnt;
+	int continous_mode = 0;
 	ushort *cont_data = (ushort *)0xd0000000; /* 96K size: 130k(0x20800 ~ 226k(0x38800)*/
 
 	phy_ctrl = readl((void *)(ADC_BASE + LIGHT_ADC_PHY_CTRL));
@@ -125,9 +130,12 @@ static void light_adc_start_sampling(void)
 	if (g_chan < 0 || g_chan > 7)
 		printf("non valid chan set, only support 0~7 chan\n");
 
+	if (!(g_op_ctrl & LIGHT_ADC_OP_ONE_SHOT_MODE))
+		continous_mode = 1;
+
 	while (cnt < g_sample_cnt) {
 		uint ievent;
-		uint val = 0;
+		uint val = 0, val1 = 0;
 		uint chan_number;
 		int timeout = 1000000;
 
@@ -138,15 +146,18 @@ static void light_adc_start_sampling(void)
 				chan_number = (ievent & LIGHT_ADC_SAMPLE_CH0_NUMBER) >> LIGHT_ADC_SAMPLE_CH0_NUMBER_OFF;
 				if (chan_number == g_chan) {
 					val = (ievent & LIGHT_ADC_SAMPLE_DATA_CH0) >> LIGHT_ADC_SAMPLE_DATA_CH0_OFF;
-					break;
+					if (!continous_mode)
+						break;
 				}
 			}
 
-			if (ievent & LIGHT_ADC_SAMPLE_DATA_CH1_VLD) {
-				chan_number = (ievent & LIGHT_ADC_SAMPLE_CH1_NUMBER) >> LIGHT_ADC_SAMPLE_CH1_NUMBER_OFF;
-				if (chan_number == g_chan) {
-					val = (ievent & LIGHT_ADC_SAMPLE_DATA_CH1) >> LIGHT_ADC_SAMPLE_DATA_CH1_OFF;
-					break;
+			if (continous_mode) {
+				if (ievent & LIGHT_ADC_SAMPLE_DATA_CH1_VLD) {
+					chan_number = (ievent & LIGHT_ADC_SAMPLE_CH1_NUMBER) >> LIGHT_ADC_SAMPLE_CH1_NUMBER_OFF;
+					if (chan_number == g_chan) {
+						val1 = (ievent & LIGHT_ADC_SAMPLE_DATA_CH1) >> LIGHT_ADC_SAMPLE_DATA_CH1_OFF;
+						break;
+					}
 				}
 			}
 
@@ -163,6 +174,10 @@ static void light_adc_start_sampling(void)
 
 		cont_data[cnt] = (ushort)val;
 		cnt++;
+		if (continous_mode) {
+			cont_data[cnt] = (ushort)val1;
+			cnt++;
+		}
 	}
 
 	phy_ctrl = readl((void *)(ADC_BASE + LIGHT_ADC_PHY_CTRL));

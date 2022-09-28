@@ -1205,7 +1205,7 @@ while(((train_result&0xffff)!=0x7) & ((train_result&0xffff)!=0xff))
 {
     train_result = get_phy1_mails();
     #ifdef DDR_FW_DETAIL_MSG
-    printf("\n");
+    //printf("\n");
     #endif
 
     #ifdef DDR_FW_STAGE_MSG

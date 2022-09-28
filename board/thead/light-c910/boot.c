@@ -10,679 +10,624 @@
 #include <opensbi.h>
 #include <asm/csr.h>
 #include <asm/arch-thead/boot_mode.h>
+#include "../../../lib/sec_library/include/csi_efuse_api.h"
 
-static struct fw_dynamic_info opensbi_info;
 
-enum board_type {
-	NT_DTS = 0,
-	T_DTS,
-	UBOOT_DTS,
-};
 
-long t_start_address;
-long t_size;
-long nt_start_address = 0;
-long nt_size;
-long t_dtb_address;
-long t_kernel_address;
-long nt_dtb_address;
-struct pmp {
-	long start;
-	long end;
-	int r, w, x;
-};
-struct pmp pmp_configs[32];
-static int total_pmp = 0;
-static int setup_nt_pmp_array(long start, long size)
+#if CONFIG_IS_ENABLED(LIGHT_SEC_UPGRADE)
+
+/* The micro is used to enable NON-COT boot with non-signed image */
+#define LIGHT_NON_COT_BOOT	1
+
+/* The micro is used to enable uboot version in efuse */
+#define	LIGHT_UBOOT_VERSION_IN_ENV	1
+
+/* The micro is used to enble RPMB ACCESS KEY from KDF */
+//#define LIGHT_KDF_RPMB_KEY	1
+
+/* the sample rpmb key is only used for testing */
+#ifndef LIGHT_KDF_RPMB_KEY 
+static const unsigned char emmc_rpmb_key_sample[32] = {0x33, 0x22, 0x11, 0x00, 0x77, 0x66, 0x55, 0x44, \
+												0xbb, 0xaa, 0x99, 0x88, 0xff, 0xee, 0xdd, 0xcc, \
+												0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, \
+												0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+#endif
+static unsigned int upgrade_image_version = 0;
+
+int csi_tf_get_image_version(unsigned int *ver)
 {
-	if (total_pmp == 31) {
-		debug("PMP entries are full!!!\n");
+	char runcmd[64] = {0};
+	unsigned char blkdata[256];
+
+	/* tf version reside in RPMB block#0, offset#16*/
+	sprintf(runcmd, "mmc rpmb read 0x%lx 0 1", (unsigned long)blkdata);
+	run_command(runcmd, 0);
+	*ver = (blkdata[16] << 8) + blkdata[17];
+
+	return 0;
+}
+
+int csi_tf_set_image_version(unsigned int ver)
+{
+	char runcmd[64] = {0};
+	unsigned char blkdata[256];
+	unsigned long *temp_rpmb_key_addr = NULL;
+
+	/* tf version reside in RPMB block#0, offset#16*/
+	sprintf(runcmd, "mmc rpmb read 0x%lx 0 1", (unsigned long)blkdata);
+	run_command(runcmd, 0);
+	blkdata[16] = (ver & 0xFF00) >> 8;
+	blkdata[17] = ver & 0xFF;
+
+	/* tf version reside in RPMB block#0, offset#16*/
+#ifndef LIGHT_KDF_RPMB_KEY 
+	temp_rpmb_key_addr = (unsigned long *)emmc_rpmb_key_sample;
+#else 
+	uint8_t kdf_rpmb_key[32];
+	uint32_t kdf_rpmb_key_length = 0;
+	int ret = 0;
+	ret = csi_kdf_gen_hmac_key(kdf_rpmb_key, &kdf_rpmb_key_length);
+	if (ret != 0) {
 		return -1;
 	}
+	temp_rpmb_key_addr = (unsigned long *)kdf_rpmb_key;
+#endif
 
-	pmp_configs[total_pmp].start = start;
-	pmp_configs[total_pmp].end = start + size;
-
-	total_pmp++;
-
-	return 0;
-}
-
-static void __maybe_unused dump_nt_pmp_array(void)
-{
-	debug("total pmp number: %d\n", total_pmp);
-	for (int i = 0; i < total_pmp; i++) {
-		debug("pmp[%d]: 0x%lx ~ 0x%lx\n",
-			i, pmp_configs[i].start, pmp_configs[i].end);
-	}
-}
-
-static void setup_nt_pmp_configs(void)
-{
-	long pmp_entry = PMP_BASE_ADDR + csr_read(CSR_MHARTID) * 0x4000 + 0x100;
-	long pmp_cfg = PMP_BASE_ADDR + csr_read(CSR_MHARTID) * 0x4000 + 0x0;
-
-	for (int i = 0, j = 0; i < total_pmp; i++) {
-		writel(pmp_configs[i].start >> 12, (void *)(pmp_entry + j * 4));
-		j++;
-		writel(pmp_configs[i].end >> 12, (void *)(pmp_entry + j * 4));
-		j++;
-	}
-
-	for (int k = 0; k < total_pmp; k++) {
-		int x, y;
-		x = k / 4;
-		y = k % 4;
-
-		/* pmp_configs[0] must be memory */
-		if (k == 0)
-			writel(readl((void *)(pmp_cfg + x * 4)) | 0x87 << y * 8, (void *)(pmp_cfg + x * 4));
-		else
-			writel(readl((void *)(pmp_cfg + x * 4)) | 0x83 << y * 8, (void *)(pmp_cfg + x * 4));
-	}
-
-	/* Set default pmp all allow but for T
-	 * So NT can't use it either
-	 */
-	writel(0xc7, (void *)(pmp_cfg + 0x20));
-
-	sync_is();
-}
-
-static int parse_memory(const void *blob, int t)
-{
-	int node;
-	fdt32_t *reg;
-	long address, size;
-
-	node = fdt_path_offset(blob, "/memory");
-	if (node < 0)
-		return -ENOENT;
-
-	reg = (fdt32_t *)fdt_getprop(blob, node, "reg", 0);
-	address = fdt_translate_address(blob, node, reg);
-	reg += 2;
-	size = fdt_translate_address(blob, node, reg);
-	if (t == T_DTS) {
-		t_start_address = address;
-		t_size = size;
-		debug("t_start_address: 0x%lx\n", t_start_address);
-	} else if (t == NT_DTS) {
-		nt_start_address = address;
-		nt_size = size;
-		if (setup_nt_pmp_array(address, size))
-			return -EINVAL;
-		debug("nt_start_address: 0x%lx\n", nt_start_address);
-	}
+	sprintf(runcmd, "mmc rpmb write 0x%lx 0 1 0x%lx", (unsigned long)blkdata, (unsigned long)temp_rpmb_key_addr);
+	run_command(runcmd, 0);
 
 	return 0;
 }
 
-/*
-int irq_no[100] = {56, 57, 58, 59, 16, 17, 18, 19, 20, 21, 22, 23, 36, 38, 39, 40, 41,
-					44, 54, 52, 24, 25, 74, 68, 27, 150, 66, 62, 64};
-*/
-int i = 0;
-int irq_no[255] = {0};
-static int setup_t_plic(const void *blob)
+int csi_tf_set_upgrade_version(void)
 {
-	int x, y;
+	return csi_tf_set_image_version(upgrade_image_version);
+}
+
+int csi_tee_get_image_version(unsigned int *ver)
+{
+	char runcmd[64] = {0};
+	unsigned char blkdata[256];
+
+	/* tf version reside in RPMB block#0, offset#0*/
+	sprintf(runcmd, "mmc rpmb read 0x%lx 0 1", (unsigned long)blkdata);
+	run_command(runcmd, 0);
+	*ver = (blkdata[0] << 8) + blkdata[1];
+
+	return 0;
+}
+
+int csi_tee_set_image_version(unsigned int ver)
+{
+	char runcmd[64] = {0};
+	unsigned char blkdata[256];
+	unsigned long *temp_rpmb_key_addr = NULL;
+
+	/* tf version reside in RPMB block#0, offset#0*/
+	sprintf(runcmd, "mmc rpmb read 0x%lx 0 1", (unsigned long)blkdata);
+	run_command(runcmd, 0);
+	blkdata[0] = (ver & 0xFF00) >> 8;
+	blkdata[1] = ver & 0xFF;
+
+	/* tf version reside in RPMB block#0, offset#16*/
+#ifndef LIGHT_KDF_RPMB_KEY 
+	temp_rpmb_key_addr = (unsigned long *)emmc_rpmb_key_sample;
+#else 
+	uint8_t kdf_rpmb_key[32];
+	uint32_t kdf_rpmb_key_length = 0;
+	int ret = 0;
+	ret = csi_kdf_gen_hmac_key(kdf_rpmb_key, &kdf_rpmb_key_length);
+	if (ret != 0) {
+		return -1;
+	}
+	temp_rpmb_key_addr = (unsigned long *)kdf_rpmb_key;
+#endif
+	sprintf(runcmd, "mmc rpmb write 0x%lx 0 1 0x%lx", (unsigned long)blkdata, (unsigned long)temp_rpmb_key_addr);
+	run_command(runcmd, 0);
+
+	return 0;
+}
+
+int csi_tee_set_upgrade_version(void)
+{
+	return csi_tee_set_image_version(upgrade_image_version);
+}
+
+int csi_uboot_get_image_version(unsigned int *ver)
+{
+#ifdef	LIGHT_UBOOT_VERSION_IN_ENV
+	long long uboot_ver = 0;
+	unsigned char ver_x = 1;
 	int i;
-
-	writel(0x40000000, (void *)(PLIC_BASE_ADDR + 0x1ffff8));
-
-	for (i = 0; i < 255 && irq_no[i]; i++) {
-		debug("T irq_no: %d\n", irq_no[i]);
-		x = irq_no[i] % 32;
-		y = irq_no[i] / 32;
-
-		writel(1 << x, (void *)(PLIC_BASE_ADDR + 0x1fe000 + y * 4));
-	}
-
-	/* Enable & Lock AMP */
-	writel(0xc0000000, (void *)(PLIC_BASE_ADDR + 0x1ffff8));
-
-	return 0;
-}
-
-static int parse_soc(const void *blob, int t)
-{
-	int node, device, irq;
-	fdt32_t *intc, *reg;
-	const char *status, *name;
-	long address, size;
-
-	node = fdt_path_offset(blob, "/soc");
-	if (node < 0)
-		return -ENOENT;
-
-	debug("%s device ================\n", t == T_DTS ? "T" : "NT");
-	for (device = fdt_first_subnode(blob, node);
-		device >= 0; device = fdt_next_subnode(blob, device)) {
-		if (device == -FDT_ERR_NOTFOUND)
-			return -ENOENT;
-
-		name = fdt_get_name(blob, device, NULL);
-		debug("name: %s\n", name);
-		status = (char *)fdt_getprop(blob, device, "status", NULL);
-		if (status)
-			debug("\tstatus: %s\n", status);
-
-		intc = (fdt32_t *)fdt_getprop(blob, device, "interrupts", 0);
-		if (intc) {
-			irq = fdt_read_number(intc, 1);
-			debug("\tirq_no: %d\n", irq);
-			if (t == T_DTS) {
-				irq_no[i] = irq;
-				i++;
-			}
-		}
-
-		reg = (fdt32_t *)fdt_getprop(blob, device, "reg", 0);
-		if (reg) {
-			address = fdt_translate_address(blob, device, reg);
-			debug("\taddress: 0x%lx\n", address);
-			reg += 2;
-			size = fdt_translate_address(blob, device, reg);
-			debug("\tsize: 0x%lx\n", size);
-			if ((t == NT_DTS) && setup_nt_pmp_array(address, size))
-				return -EINVAL;
-
-			if (!strncmp(name, "mbox", 4)) {
-				reg += 2;
-				address = fdt_translate_address(blob, device, reg);
-				debug("\taddress: 0x%lx\n", address);
-				reg += 2;
-				size = fdt_translate_address(blob, device, reg);
-				debug("\tsize: 0x%lx\n", size);
-				if ((t == NT_DTS) && setup_nt_pmp_array(address, size))
-					return -EINVAL;
-
-				reg += 2;
-				address = fdt_translate_address(blob, device, reg);
-				debug("\taddress: 0x%lx\n", address);
-				reg += 2;
-				size = fdt_translate_address(blob, device, reg);
-				debug("\tsize: 0x%lx\n", size);
-				if ((t == NT_DTS) && setup_nt_pmp_array(address, size))
-					return -EINVAL;
-
-				reg += 2;
-				address = fdt_translate_address(blob, device, reg);
-				debug("\taddress: 0x%lx\n", address);
-				reg += 2;
-				size = fdt_translate_address(blob, device, reg);
-				debug("\tsize: 0x%lx\n", size);
-				if ((t == NT_DTS) && setup_nt_pmp_array(address, size))
-					return -EINVAL;
-			}
+	// TODO
+	// To avoid waste efuse resource, we define uboot_version env parameter to standd for BL1_VERSION in efuse
+	uboot_ver = env_get_hex("uboot_version", 0xffffffffffffffff);
+	// Add getting uboot version here.
+	for (i = 0; i < (UBOOT_MAX_VER-1); i++) {
+		if ((uboot_ver >> i) & 0x1) {
+			ver_x ++;
+		} else {
+			break;
 		}
 	}
 
-	return 0;
-}
-
-static int parse_and_set_iopmp(const void *blob, int t)
-{
-	int node, device;
-	fdt32_t *reg, *range;
-	long base_addr, start, end, size;
-
-	node = fdt_path_offset(blob, "/iopmp");
-	if (node < 0)
-		return -ENOENT;
-
-	debug("%s iopmp ================\n", t == T_DTS ? "T" : "NT");
-	for (device = fdt_first_subnode(blob, node);
-		device >= 0; device = fdt_next_subnode(blob, device)) {
-		if (device == -FDT_ERR_NOTFOUND)
-			return -ENOENT;
-
-		debug("name: %s\n", fdt_get_name(blob, device, NULL));
-		reg = (fdt32_t *)fdt_getprop(blob, device, "reg", 0);
-		range = (fdt32_t *)fdt_getprop(blob, device, "range", 0);
-		if (reg && range) {
-			base_addr = fdt_translate_address(blob, device, reg);
-			debug("\tbase_addr: 0x%lx\n", base_addr);
-			start = fdt_translate_address(blob, device, range);
-			debug("\tstart: 0x%lx\n", start);
-			range += 2;
-			size = fdt_translate_address(blob, device, range);
-			debug("\tsize: 0x%lx\n", size);
-			end = start + size;
-			if ((t == NT_DTS)) {
-				writel(start >> 12, (void *)(base_addr + 0x280));
-				writel(end >> 12, (void *)(base_addr + 0x284));
-				writel(0x3, (void *)(base_addr + 0x80));
-			}
-		}
+	if ( i <= (UBOOT_MAX_VER-1) ) {
+		*ver = ver_x << 8;
+	} else {
+		*ver = 1 << 8;
 	}
-
-	return 0;
-}
-
-static long boot_addr[4];
-static long boot_addr_chk[4];
-
-static void boot_kernel(long hart, long fly_addr, long krl_addr, long dtb_addr)
-{
-	void (*kernel)(ulong hart, void *dtb, struct fw_dynamic_info *p);
-
-	kernel = (void *)fly_addr;
-
-	opensbi_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;
-	opensbi_info.version = 0x1;
-	opensbi_info.next_addr = krl_addr;
-	opensbi_info.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S;
-	opensbi_info.options = 0;
-	opensbi_info.boot_hart = 0;
-
-	kernel(hart, (void *)dtb_addr, &opensbi_info);
-}
-
-static void boot_t_core(void)
-{
-	long hart = csr_read(CSR_MHARTID);
-
-	if (hart == 0)
-		goto boot;
-
-	csr_write(CSR_SMPEN, 0x1);
-	csr_write(CSR_MCOR, 0x70013);
-	csr_write(CSR_MCCR2, 0xe0010009);
-	csr_write(CSR_MHCR, 0x11ff);
-	csr_write(CSR_MXSTATUS, 0x638000);
-	csr_write(CSR_MHINT, 0x16e30c);
-
-boot:
-	/* Set this for locking it */
-	//csr_write(CSR_MTEE, 0xff);
-
-	boot_kernel(hart, t_start_address, t_kernel_address, t_dtb_address);
-}
-
-static void boot_nt_core(void)
-{
-	void (*fly)(long, long);
-
-	fly = (void *)nt_start_address;
-
-	setup_nt_pmp_configs();
-
-	csr_write(CSR_SMPEN, 0x1);
-	csr_write(CSR_MCOR, 0x70013);
-	csr_write(CSR_MCCR2, 0xe0010009);
-	csr_write(CSR_MHCR, 0x11ff);
-	csr_write(CSR_MXSTATUS, 0x638000);
-	csr_write(CSR_MHINT, 0x16e30c);
-
-	//csr_write(CSR_MTEE, 0x00); /* Do it in opensbi */
-
-	fly(0xdeadbeef, nt_dtb_address);
-}
-
-static int parse_cpu(const void *blob, int t)
-{
-	int node, cpu, core;
-	fdt32_t *reg;
-	const char *status;
-
-	node = fdt_path_offset(blob, "/cpus");
-	if (node < 0)
-		return -ENOENT;
-
-	for (cpu = fdt_first_subnode(blob, node);
-		cpu >= 0; cpu = fdt_next_subnode(blob, cpu)) {
-
-		reg = (fdt32_t *)fdt_getprop(blob, cpu, "reg", 0);
-		core = fdt_read_number(reg, 1);
-		debug("core %d  ", core);
-
-		status = fdt_getprop(blob, cpu, "status", NULL);
-		if (t == T_DTS) {
-			if (!strcmp(status, "okay")) {
-				debug("T world\n");
-				boot_addr[core] = (long)&boot_t_core;
-			} else if (!strcmp(status, "disabled")) {
-				debug("NT world\n");
-				boot_addr[core] = (long)&boot_nt_core;
-			} else {
-				debug("Incorrect DTS! Not okay nor disabled\n");
-				return -EINVAL;
-			}
-		} else if (t == NT_DTS) {
-			if (!strcmp(status, "okay")) {
-				debug("NT world\n");
-				boot_addr_chk[core] = (long)&boot_nt_core;
-			} else if (!strcmp(status, "disabled")) {
-				debug("T world\n");
-				boot_addr_chk[core] = (long)&boot_t_core;
-			} else {
-				debug("Incorrect DTS! Not okay nor disabled\n");
-				return -EINVAL;
-			}
-		}
-	}
-
-	return 0;
-}
-
-int check_cpu(void)
-{
-	if ((boot_addr[0] != boot_addr_chk[0]) ||
-		(boot_addr[1] != boot_addr_chk[1]) ||
-		(boot_addr[2] != boot_addr_chk[2]) ||
-		(boot_addr[3] != boot_addr_chk[3]))
-		return -1;
-	return 0;
-}
-
-static int parse_dtb(const void *blob_t, const void *blob_nt)
-{
+#else
+	unsigned int ver_x = 0;
 	int ret = 0;
 
-	parse_memory(blob_t, T_DTS);
-	parse_memory(blob_nt, NT_DTS);
+	ret = csi_efuse_api_int();
+	if (ret) {
+		printf("efuse api init fail \n");
+		return -1;
+	}
+	ret = csi_efuse_get_bl1_version(&ver_x);
+	if (ret) {
+        printf("csi_efuse_get_bl1_version fail\n");
+		return -1;
+	}
 
-	parse_soc(blob_t, T_DTS);
-	parse_soc(blob_nt, NT_DTS);
+    csi_efuse_api_uninit();
 
-	parse_and_set_iopmp(blob_nt, NT_DTS);
+	*ver = (ver_x + 1) << 8;
 
-	ret = parse_cpu(blob_t, T_DTS);
-	parse_cpu(blob_nt, NT_DTS);
-	check_cpu();
-
-	if (ret)
-		return -EINVAL;
-
-	return 0;
-}
-
-static int __maybe_unused boot_buddies(void)
-{
-	debug("cpu 0 ---0x%lx\n", boot_addr[0]);
-	debug("cpu 1 ---0x%lx\n", boot_addr[1]);
-	debug("cpu 2 ---0x%lx\n", boot_addr[2]);
-	debug("cpu 3 ---0x%lx\n", boot_addr[3]);
-
-	writel(boot_addr[1] & 0xffffffff, (void *)(0xffff018000 + 0x58));
-	writel(boot_addr[1] >> 32,        (void *)(0xffff018000 + 0x5c));
-	writel(0b00111, (void *)(0xffff014000 + 0x04));
-	udelay(50000);
-
-	writel(boot_addr[2] & 0xffffffff, (void *)(0xffff018000 + 0x60));
-	writel(boot_addr[2] >> 32,        (void *)(0xffff018000 + 0x64));
-	writel(0b01111, (void *)(0xffff014000 + 0x04));
-	udelay(50000);
-
-	writel(boot_addr[3] & 0xffffffff, (void *)(0xffff018000 + 0x68));
-	writel(boot_addr[3] >> 32,        (void *)(0xffff018000 + 0x6c));
-	writel(0b11111, (void *)(0xffff014000 + 0x04));
+#endif
 
 	return 0;
 }
 
-static int parse_img_verify(ulong *addr, char * const argv[])
+int csi_uboot_set_image_version(unsigned int ver)
 {
-	char *env;
-	long sbi_addr = SBI_ENTRY_ADDR;
-	long aon_addr = AON_DDR_ADDR;
-	int header_off = 0;
-	int ret;
+#ifdef	LIGHT_UBOOT_VERSION_IN_ENV
+	//TODO
+	unsigned long long uboot_ver = 0;
+	unsigned char ver_x = (ver & 0xff00) >> 8;
+    char ver_str[32] = {0};
 
-	ret = csi_sec_init();
-	if (ret)
-		return ret;
+	uboot_ver = env_get_hex("uboot_version", 0xffffffffffffffff);
 
-	addr[1] = simple_strtoul(argv[1], NULL, 16);
-	t_kernel_address = addr[1];
-	if (image_have_head(addr[1]) == 1)
-		header_off = HEADER_SIZE;
-	ret = csi_sec_image_verify(T_KRLIMG, addr[1]);
-	if (ret)
-		return ret;
-	addr[1] += header_off;
-	t_kernel_address = addr[1];
-	sprintf(argv[1], "0x%lx", addr[1]);
-	debug("linux: 0x%lx\n", addr[1]);
+	// Add getting uboot version here.
+	if (ver_x == 1) {
+		printf("This is initial version !");
+		return 0;
+	}
+	uboot_ver |= ((unsigned long long)1 << (ver_x - 2));
 
-	addr[2] = simple_strtoul(argv[2], NULL, 16);
-#if LIGHT_ROOTFS_SEC_CHECK
-	header_off = 0;
-	if (image_have_head(addr[2]) == 1)
-		header_off = HEADER_SIZE;
-	ret = csi_sec_image_verify(T_ROOTFS, addr[2]);
-	if (ret)
-		return ret;
-	addr[2] += header_off;
-	sprintf(argv[2], "0x%lx", addr[2]);
+	// To avoid waste efuse resource, we define uboot_version env parameter to stand for BL1_VERSION in efuse
+	env_set_hex("uboot_version", uboot_ver);
 #else
-	sprintf(argv[2], "-");
-#endif
-	debug("rootfs: 0x%lx\n", addr[2]);
+	unsigned int ver_x = 0;
+	int ret = 0;
 
-	addr[3] = simple_strtoul(argv[3], NULL, 16);
-	header_off = 0;
-	t_dtb_address = addr[3];
-	if (image_have_head(addr[3]) == 1)
-		header_off = HEADER_SIZE;
-	ret = csi_sec_image_verify(T_DTB, addr[3]);
-	if (ret)
-		return ret;
-	addr[3] += header_off;
-	t_dtb_address = addr[3];
-	sprintf(argv[3], "0x%lx", addr[3]);
-	debug("t dtb: 0x%lx\n", addr[3]);
-
-	addr[4] = simple_strtoul(argv[4], NULL, 16);
-	nt_dtb_address = addr[4];
-	debug("nt dtb: 0x%lx\n", addr[4]);
-
-	env = env_get("t_opensbi_addr");
-	if (env)
-		sbi_addr = simple_strtol(env, NULL, 0);
-	ret = csi_sec_image_verify(T_SBI, sbi_addr);
-	if (ret)
-		return ret;
-
-	ret = csi_sec_image_verify(T_AON, aon_addr);
-	if (ret)
-		return ret;
-
-	return 0;
-}
-
-#define BOOTCODE_SIZE    4
-char tee_bootcode[BOOTCODE_SIZE] = {0x73, 0x50, 0x40, 0x7f};
-int light_boot(int argc, char * const argv[])
-{
-	ulong addr[5] = {0};
-
-	if (argc < 2) {
-		debug("args not match!\n");
-		return CMD_RET_USAGE;
+    ver_x = (ver & 0xff00) >> 8;
+	if (ver_x == 1) {
+		printf("This is initial version !");
+		return 0;
 	}
 
-	if (parse_img_verify(addr, argv) < 0) {
-		debug("parse args failed!\n");
-		return CMD_RET_USAGE;
+	ret = csi_efuse_api_int();
+	if (ret) {
+		printf("efuse api init fail \n");
+		return -1;
+	}
+	
+	ver_x = ver_x - 1;
+	ret = csi_efuse_set_bl1_version(ver_x);
+	if (ret) {
+        printf("csi_efuse_set_bl1_version fail \n");
+		return -1;
 	}
 
-	if (parse_dtb((const void *)addr[3], (const void *)addr[4]) < 0) {
-		debug("parse dtb failed!\n");
-		return CMD_RET_USAGE;
-	}
+    csi_efuse_api_uninit();
 
-	setup_t_plic((const void *)addr[3]);
-
-	if (nt_start_address)
-		memcpy((void *)nt_start_address, tee_bootcode, BOOTCODE_SIZE);
-
-	run_command("bootslave", 0);
-
-	return 0;
-}
-
-//#define TF_TEE_KEY_IN_RPMB_CASE
-/* the sample rpmb key is only used for testing */
-const unsigned char emmc_rpmb_key_sample[16] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,\
-												0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
-
-
-
-int csi_get_tf_image_version(unsigned int *ver)
-{
-#ifdef TF_TEE_KEY_IN_RPMB_CASE
-	char runcmd[64] = {0};
-	unsigned long blkdata_addr = 0x80000000;
-
-	/* tee version reside in RPMB block#0, offset#16*/
-	sprintf(runcmd, "mmc rpmb read 0x%x 0 1", blkdata_addr);
-	run_command(runcmd, 0);
-	*ver = *(unsigned short *)(blkdata_addr+16);
-#else 
-	*ver = env_get_hex("tf_version", 0);
 #endif
 	return 0;
 }
 
-int csi_set_tf_image_version(unsigned int ver)
+int csi_uboot_set_upgrade_version(void)
 {
-	env_set_hex("tf_version", ver);
-	return 0;
+	return csi_uboot_set_image_version(upgrade_image_version);
 }
 
-int csi_get_tf_image_new_version(unsigned int *ver)
+int verify_image_version_rule(unsigned int new_ver, unsigned int cur_ver)
 {
-	*ver = env_get_hex("tf_new_version", 0);
-	return 0;
-}
+	unsigned char new_ver_x = 0, new_ver_y = 0;
+	unsigned char cur_ver_x = 0, cur_ver_y = 0;
 
-int csi_get_tee_image_version(unsigned int *ver)
-{
-#ifdef TF_TEE_KEY_IN_RPMB_CASE
-	char runcmd[64] = {0};
-	unsigned long blkdata_addr = 0x80000000;
+	/* Get secure version X from image version X.Y */
+	new_ver_x = (new_ver & 0xFF00) >> 8;
+	new_ver_y = new_ver & 0xFF;
+	cur_ver_x = (cur_ver & 0xFF00) >> 8;
+	cur_ver_y = cur_ver & 0xFF;
 
-	/* tee version reside in RPMB block#0, offset#0*/
-	sprintf(runcmd, "mmc rpmb read 0x%x 0 1", blkdata_addr);
-	run_command(runcmd, 0);
-	*ver = *(unsigned short *)blkdata_addr;
-#else 
-	*ver = env_get_hex("tee_version", 0);
-#endif
-	return 0;
-}
+	printf("\n\n");
+	printf("cur image version: %d.%d\n", cur_ver_x, cur_ver_y);
+	printf("new image version: %d.%d\n", new_ver_x, new_ver_y);
 
-int csi_set_tee_image_version(unsigned int ver)
-{
-	env_set_hex("tee_version", ver);
-	return 0;
-}
+	/* According the version rule, the X value must increase by 1 */
+	if ((new_ver_x - cur_ver_x) == 0) {
+		/* This is unsecure function */
+		if ((new_ver_y - cur_ver_y) == 0) {
+			printf("New version is equal to Current version, upgrade process terminates \n\n\n");
+			return -1;
+		}
+		printf("This is unsecure function upgrade, going on uprade anyway\n");
+	} else if ((new_ver_x - cur_ver_x) != 1) {
+		/* Check the seure version rule */
+		printf("The upgrade version(X) breaks against the rule\n\n\n");
+		return -1;
+	}
+	printf("check image verison rule pass\n\n\n");
 
-int csi_get_tee_image_new_version(unsigned int *ver)
-{
-	*ver = env_get_hex("tee_new_version", 0);
 	return 0;
 }
 
 int light_vimage(int argc, char *const argv[])
 {
 	int ret = 0;
-	int vimage_addr = 0;
-	int code_offset = 0;
-	int new_img_version = 0;
-	int cur_img_version = 0;
-	char imgname[32] = {0};
-
+	unsigned long vimage_addr = 0;
+	unsigned int new_img_version = 0;
+	unsigned int cur_img_version = 0;
+    char imgname[32] = {0};
+    
 	if (argc < 3) 
 		return CMD_RET_USAGE;
 	
+	/* Parse input parameters */
 	vimage_addr = simple_strtoul(argv[1], NULL, 16);
 	strcpy(imgname, argv[2]);
-
-#if 0	
-	if (image_have_head(vimage_addr) == 1)
-		code_offset = HEADER_SIZE;
-
+	
+	/* Retrieve desired information from image header */
 	new_img_version = get_image_version(vimage_addr);
 	if (new_img_version == 0) {
 		printf("get new img version fail\n");
-		return -1;
+		return CMD_RET_FAILURE;
 	}
-	printf("new image version: %4x\n", new_img_version);
-#endif
+    if (strcmp(imgname, UBOOT_PART_NAME) == 0) {
+        new_img_version = (((new_img_version & 0xff )+1) << 8) | ((new_img_version & 0xff00)>>8);
+    }
+	printf("Get new image version from image header: v%d.%d\n", (new_img_version & 0xff00)>>8, new_img_version & 0xff);
+
 	/* Check image version for ROLLBACK resisance */ 
-	if (strcmp(imgname, "tf") == 0) {
-		ret = csi_get_tf_image_new_version(&new_img_version);
-		if (ret != 0) {
-			printf("Get tf img new ersion fail\n");
-			return -1;
-		}
-		ret = csi_get_tf_image_version(&cur_img_version);
+	if (strcmp(imgname, TF_PART_NAME) == 0) {
+		
+		ret = csi_tf_get_image_version(&cur_img_version);
 		if (ret != 0) {
 			printf("Get tf img version fail\n");
-			return -1;
+			return CMD_RET_FAILURE;
 		}
-	} else if (strcmp(imgname, "tee") == 0){
-		ret = csi_get_tee_image_new_version(&new_img_version);
-		if (ret != 0) {
-			printf("Get tee img new ersion fail\n");
-			return -1;
-		}
+	} else if (strcmp(imgname, TEE_PART_NAME) == 0){
 
-		ret = csi_get_tee_image_version(&cur_img_version);
+		ret = csi_tee_get_image_version(&cur_img_version);
 		if (ret != 0) {
 			printf("Get tee img version fail\n");
-			return -1;
+			return CMD_RET_FAILURE;
 		}
+	} else if (strcmp(imgname, UBOOT_PART_NAME) == 0) {
+		ret = csi_uboot_get_image_version(&cur_img_version);
+		if (ret != 0) {
+			printf("Get uboot img version fail\n");
+			return CMD_RET_FAILURE;
+		} 
+		
+		// Check uboot maximization version > 64
+		if (((new_img_version & 0xFF00) >> 8) > UBOOT_MAX_VER) {
+			printf("UBOOT Image version has reached to max-version\n");
+			return CMD_RET_FAILURE;
+		}
+
 	} else {
 		printf("unsupport image file\n");
-		return -1;
+		return CMD_RET_FAILURE;
 	}
 	
-
-	/* Get secure version X from image version X.Y */
-	printf("cur image version: %d.%d\n", cur_img_version >> 8, cur_img_version & 0xff);
-	printf("new image version: %d.%d\n", new_img_version >> 8, new_img_version & 0xff);
-
-	/* According the version rule, the X value must increase by 1 */
-	if (((new_img_version >> 8) - (cur_img_version >> 8)) == 0) {
-		/* This is unsecure function */
-		printf("This is unsecure function upgrade, going on uprade anyway\n");
+	/* Verify image version rule */
+	ret = verify_image_version_rule(new_img_version, cur_img_version);
+	if (ret != 0) {
+		return CMD_RET_FAILURE;
 	}
-	if (((new_img_version >> 8) - (cur_img_version >> 8)) != 1) {
-		printf("upgrade version is not defined against the rule\n");
-		return -1;
+	
+	/* Save new image version to allow caller upgrade image version */
+	upgrade_image_version = new_img_version;
+
+	/* Initialize secure basis of functions */
+	ret = csi_sec_init();
+	if (ret != 0) {
+		return CMD_RET_FAILURE;
 	}
-	printf("check image verison rule pass\n");
-	if (strcmp(imgname, "tf") == 0) {
-		/* update tf image version */
-		ret = csi_set_tf_image_version(new_img_version);
+
+	/* Do image verification for TF and TEE */
+	if (strcmp(imgname, TF_PART_NAME) == 0) {
+		ret = verify_customer_image(T_TF, vimage_addr);
 		if (ret != 0) {
-			printf("Get tf img version fail\n");
-			return -1;
+			return CMD_RET_FAILURE;
 		}
-	} else if (strcmp(imgname, "tee") == 0){
-		/* update tee image version */
-		ret = csi_set_tee_image_version(new_img_version);
+	} else if (strcmp(imgname, TEE_PART_NAME) == 0) {
+		ret = verify_customer_image(T_TEE, vimage_addr);
 		if (ret != 0) {
-			printf("Get tee img version fail\n");
-			return -1;
+			return CMD_RET_FAILURE;
+		}
+	} else if (strcmp(imgname, UBOOT_PART_NAME) == 0) {
+		ret = verify_customer_image(T_UBOOT, vimage_addr);
+		if (ret != 0) {
+			return CMD_RET_FAILURE;
 		}
 	} else {
-		printf("unsupport image file\n");
-		return -1;
+		printf("Error: unknow image name\n");
+		return CMD_RET_FAILURE;
 	}
-#if 0
-	ret = csi_sec_init();
-	if (ret != 0)
-		return ret;
 
-	ret = csi_sec_image_verify(T_TF, vimage_addr);
-	if (ret != 0)
-		return ret;
-#endif
 	return 0;
 }
+
+int light_secboot(int argc, char * const argv[])
+{
+	int ret = 0;
+	unsigned long tf_addr = LIGHT_TF_FW_ADDR;
+	unsigned long tee_addr = LIGHT_TEE_FW_ADDR;
+	unsigned int tf_image_size = 0;
+	unsigned int tee_image_size = 0;
+
+	printf("\n\n");
+	printf("Now, we start to verify all trust firmware before boot kernel !\n");
+
+	/* Initialize secure basis of functions */
+	ret = csi_sec_init();
+	if (ret != 0) {
+		return CMD_RET_FAILURE;
+	}
+
+	/* Step1. Check and verify TF image */
+	if (image_have_head(LIGHT_TF_FW_TMP_ADDR) == 1) {
+
+		printf("Process TF image verification ...\n");
+		ret = verify_customer_image(T_TF, LIGHT_TF_FW_TMP_ADDR);
+		if (ret != 0) {
+			return CMD_RET_FAILURE;
+		}
+
+		tf_image_size = get_image_size(LIGHT_TF_FW_TMP_ADDR);
+		printf("TF image size: %d\n", tf_image_size);
+		if (tf_image_size  < 0) {
+			printf("GET TF image size error\n");
+			return CMD_RET_FAILURE;
+		}
+
+		memmove((void *)tf_addr, (const void *)(LIGHT_TF_FW_TMP_ADDR + HEADER_SIZE), tf_image_size);
+	} else {
+		#ifdef LIGHT_NON_COT_BOOT
+			run_command("ext4load mmc 0:3 0x0 trust_firmware.bin", 0);
+		#else
+			return CMD_RET_FAILURE;
+		#endif
+	}
+
+	/* Step2. Check and verify TEE image */
+	if (image_have_head(tee_addr) == 1) {
+		printf("Process TEE image verification ...\n");
+		ret = verify_customer_image(T_TEE, tee_addr);
+		if (ret != 0) {
+			return CMD_RET_FAILURE;
+		}
+
+		tee_image_size = get_image_size(tee_addr);
+		printf("TEE image size: %d\n", tee_image_size);
+		if (tee_image_size  < 0) {
+			printf("GET TEE image size error\n");
+			return CMD_RET_FAILURE;
+		}
+
+		memmove((void *)tee_addr, (const void *)(tee_addr + HEADER_SIZE), tee_image_size);
+	} else {
+		#ifndef LIGHT_NON_COT_BOOT
+			return CMD_RET_FAILURE;
+		#endif
+	}
+	return 0;
+}
+
+void sec_firmware_version_dump(void)
+{
+	unsigned int tf_ver = 0;
+	unsigned int tee_ver = 0;
+	unsigned int uboot_ver = 0;
+
+	csi_uboot_get_image_version(&uboot_ver);
+	csi_tf_get_image_version(&tf_ver);
+	csi_tee_get_image_version(&tee_ver);
+
+	printf("\n\n");
+	printf("Secure Firmware image version info: \n");
+	printf("uboot Firmware v%d.0\n", (uboot_ver & 0xff00) >> 8);
+	printf("Trust Firmware v%d.%d\n", (tf_ver & 0xff00) >> 8, tf_ver & 0xff);
+	printf("TEE OS v%d.%d\n", (tee_ver & 0xff00) >> 8, tee_ver & 0xff);
+	printf("\n\n");
+}
+
+void sec_upgrade_thread(void)
+{
+	const unsigned long temp_addr=0x200000;
+	char runcmd[80];
+	int ret = 0;
+	unsigned int sec_upgrade_flag = 0;
+	unsigned int upgrade_file_size = 0;
+
+	sec_upgrade_flag = env_get_hex("sec_upgrade_mode", 0);
+	if (sec_upgrade_flag == 0)
+		return;
+	
+	printf("bootstrap: sec_upgrade_flag: %x\n", sec_upgrade_flag);
+	if (sec_upgrade_flag == TF_SEC_UPGRADE_FLAG) {
+		
+		/* STEP 1: read upgrade image (trust_firmware.bin) from stash partition */
+		printf("read upgrade image (trust_firmware.bin) from stash partition \n");
+		sprintf(runcmd, "ext4load mmc 0:5 0x%p trust_firmware.bin", (void *)temp_addr);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TF upgrade process is terminated due to some reason\n");
+			goto _upgrade_tf_exit;
+		}
+		/* Fetch the total file size after read out operation end */
+		upgrade_file_size = env_get_hex("filesize", 0);
+		printf("upgrade file size: %d\n", upgrade_file_size);
+
+		/* STEP 2: verify its authentiticy here */
+		sprintf(runcmd, "vimage 0x%p tf", (void *)temp_addr);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TF Image verification fail and upgrade process terminates\n");
+			goto _upgrade_tf_exit;
+		}
+
+		/* STEP 3: update tf partition */
+		printf("read upgrade image (trust_firmware.bin) into tf partition \n");
+		sprintf(runcmd, "ext4write mmc 0:3 0x%p /trust_firmware.bin 0x%x", (void *)temp_addr, upgrade_file_size);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TF upgrade process is terminated due to some reason\n");
+			goto _upgrade_tf_exit;
+		}
+
+		/* STEP 4: update tf version */
+		ret = csi_tf_set_upgrade_version();
+		if (ret != 0) {
+			printf("Set trustfirmware upgrade version fail\n");
+			goto _upgrade_tf_exit;
+		}
+
+		printf("\n\nTF image ugprade process is successful\n\n");
+_upgrade_tf_exit:
+		/* set secure upgrade flag to 0 that indicate upgrade over */
+		run_command("env set sec_upgrade_mode 0", 0);
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+
+	} else if (sec_upgrade_flag == TEE_SEC_UPGRADE_FLAG) {
+
+ 		/* STEP 1: read upgrade image (tee.bin) from stash partition */
+		printf("read upgrade image (tee.bin) from stash partition \n");
+		sprintf(runcmd, "ext4load mmc 0:5 0x%p tee.bin", (void *)temp_addr);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TEE Upgrade process is terminated due to some reason\n");
+			goto _upgrade_tee_exit;
+		}
+		/* Fetch the total file size after read out operation end */
+		upgrade_file_size = env_get_hex("filesize", 0);
+		printf("TEE upgrade file size: %d\n", upgrade_file_size);
+
+		/* STEP 2: verify its authentiticy here */
+		sprintf(runcmd, "vimage 0x%p tee", (void *)temp_addr);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TEE Image verification fail and upgrade process terminates\n");
+			goto _upgrade_tee_exit;
+		}
+
+		/* STEP 3: update tee partition */
+		printf("read upgrade image (tee.bin) into tf partition \n");
+		sprintf(runcmd, "ext4write mmc 0:4 0x%p /tee.bin 0x%x", (void *)temp_addr, upgrade_file_size);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("TEE upgrade process is terminated due to some reason\n");
+			goto _upgrade_tee_exit;
+		}
+
+		/* STEP 4: update tee version */
+		ret = csi_tee_set_upgrade_version();
+		if (ret != 0) {
+			printf("Set tee upgrade version fail\n");
+			goto _upgrade_tee_exit;
+		}
+
+		printf("\n\nTEE image ugprade process is successful\n\n");
+_upgrade_tee_exit:
+		/* set secure upgrade flag to 0 that indicate upgrade over */
+		run_command("env set sec_upgrade_mode 0", 0);
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+
+	} else if (sec_upgrade_flag == UBOOT_SEC_UPGRADE_FLAG) { 
+		unsigned int block_cnt;
+		struct blk_desc *dev_desc;
+		const unsigned long uboot_temp_addr=0x80000000;
+		#define BLOCK_SIZE 512
+		#define PUBKEY_HEADER_SIZE	0x1000
+
+		/* STEP 1: read upgrade image (u-boot-with-spl.bin) from stash partition */
+		printf("read upgrade image (u-boot-with-spl.bin) from stash partition \n");
+		sprintf(runcmd, "ext4load mmc 0:5 0x%p u-boot-with-spl.bin", (void *)temp_addr);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("UBOOT Upgrade process is terminated due to some reason\n");
+			goto _upgrade_uboot_exit;
+		}
+
+		/* Fetch the total file size after read out operation end */
+		upgrade_file_size = env_get_hex("filesize", 0);
+		printf("uboot upgrade file size: %d\n", upgrade_file_size);
+
+		/* STEP 2: verify its authentiticy here */
+		memmove((void *)uboot_temp_addr, (const void *)temp_addr, upgrade_file_size);
+		sprintf(runcmd, "vimage 0x%p uboot", (void *)(uboot_temp_addr+PUBKEY_HEADER_SIZE));
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		if (ret != 0) {
+			printf("UBOOT Image verification fail and upgrade process terminates\n");
+			goto _upgrade_uboot_exit;
+		}
+
+		/* STEP 3: update uboot partition */
+		printf("write upgrade image (u-boot-with-spl.bin) into boot partition \n");
+		dev_desc = blk_get_dev("mmc", CONFIG_FASTBOOT_FLASH_MMC_DEV);
+        if (!dev_desc || dev_desc->type == DEV_TYPE_UNKNOWN) {
+			printf("Invalid mmc device\n");
+			goto _upgrade_uboot_exit;
+        }
+		block_cnt = upgrade_file_size / BLOCK_SIZE;
+		if (upgrade_file_size % BLOCK_SIZE) {
+			block_cnt = block_cnt +1;
+		}
+
+		run_command("mmc partconf 0 1 0 1", 0);
+		sprintf(runcmd, "mmc write 0x%p 0 %x", (void *)temp_addr, block_cnt);
+		printf("runcmd:%s\n", runcmd);
+		ret = run_command(runcmd, 0);
+		run_command("mmc partconf 0 1 0 0", 0);
+		if (ret != 0) {
+			printf("UBOOT upgrade process is terminated due to some reason\n");
+			goto _upgrade_uboot_exit;
+		}
+
+		/* STEP 4: update tee version */
+		ret = csi_uboot_set_upgrade_version();
+		if (ret != 0) {
+			printf("Set uboot upgrade version fail\n");
+			goto _upgrade_uboot_exit;
+		}
+
+		printf("\n\nUBOOT image ugprade process is successful\n\n");
+_upgrade_uboot_exit:
+		/* set secure upgrade flag to 0 that indicate upgrade over */
+		run_command("env set sec_upgrade_mode 0", 0);
+		run_command("saveenv", 0);
+		run_command("reset", 0);
+	} else {
+		printf("Unknown bootstrap, Force sysem reboot\n");
+		run_command("reset", 0);
+	}
+}
+#endif
+
+

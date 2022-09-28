@@ -31,4 +31,6 @@ void lpddr4_init(enum DDR_TYPE type, int rank_num, int speed, enum DDR_BITWIDTH 
   enable_axi_port(0x1f);
   
   enable_auto_refresh();
+
+  lpddr4_auto_selref();
 }

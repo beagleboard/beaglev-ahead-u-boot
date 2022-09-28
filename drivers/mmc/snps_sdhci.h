@@ -43,6 +43,7 @@
 #define DLL_EN  0x0 //1bit
 
 #define PHY_DLL_CNFG1_R     (DWC_MSHC_PTR_PHY_R + 0x25)
+#define PHY_DLL_CNFG2_R     (DWC_MSHC_PTR_PHY_R + 0x26)
 #define PHY_DLLDL_CNFG_R    (DWC_MSHC_PTR_PHY_R + 0x28)
 #define SLV_INPSEL 0x5 //2bit
 

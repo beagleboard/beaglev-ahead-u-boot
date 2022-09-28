@@ -7,15 +7,6 @@
 #include <common.h>
 #include <asm/io.h>
 
-void show_sys_clk(void)
-{
-	/* Do nothing for FPGA */
-}
-
-void cpu_clk_config(int cpu_freq)
-{
-#ifndef CONFIG_TARGET_LIGHT_FPGA_FM_C910 /* for sillicon */
-	unsigned int tmp;
 #define LIGHT_APCLK_ADDRBASE	0xffff011000
 #define LIGHT_AONCLK_ADDRBASE	0xfffff46000
 #define LIGHT_DDRCLK_ADDRBASE	0xffff005000
@@ -27,6 +18,45 @@ void cpu_clk_config(int cpu_freq)
 #define LIGHT_DSP_SUBSYS_ADDRBASE	0xffff041000
 #define LIGHT_AUDIO_SUBSYS_ADDRBASE	0xffcb000000
 #define LIGHT_APSYS_RSTGEN_ADDRBASE	0xffff015000
+
+void show_sys_clk(void)
+{
+	/* Do nothing for FPGA */
+}
+
+void cpu_clk_config(uint32_t cpu_freq)
+{
+#ifndef CONFIG_TARGET_LIGHT_FPGA_FM_C910 /* for sillicon */
+	unsigned int tmp;
+	/* 4. update c910_cclk to 750Mhz */
+	/* set cpu_pll1_foutpostdiv to 750Mhz */
+	writel(0x20000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
+	writel(0x01407d01, (void *)LIGHT_APCLK_ADDRBASE + 0x10);
+	writel(0x23000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
+	udelay(3);
+	writel(0x03000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
+	readl((void *)LIGHT_APCLK_ADDRBASE + 0x80);
+	readl((void *)LIGHT_APCLK_ADDRBASE + 0x80);
+	while(!(readl((void *)LIGHT_APCLK_ADDRBASE + 0x80) & 0x10));
+	udelay(11);
+
+	/* config bus: cpu clk ratio to 1:1 */
+	writel((readl(LIGHT_APCLK_ADDRBASE + 0x100) & (~(0x7<<8))) | (0x0<<8), (void *)(LIGHT_APCLK_ADDRBASE + 0x100)); // ratio=0
+	writel(readl(LIGHT_APCLK_ADDRBASE + 0x100) & (~(0x1<<11)), (void *)(LIGHT_APCLK_ADDRBASE + 0x100)); // sync=0
+	writel(readl(LIGHT_APCLK_ADDRBASE + 0x100) | (0x1<<11), (void *)(LIGHT_APCLK_ADDRBASE + 0x100)); // sync=1
+
+	/* switch c910_cclk to cpu_pll1_foutpostdiv */
+	tmp = readl((void *)LIGHT_APCLK_ADDRBASE + 0x100);
+	tmp |= 0x1;
+	writel(tmp, (void *)LIGHT_APCLK_ADDRBASE + 0x100);
+	udelay(1);
+#endif
+}
+
+void sys_clk_config(void)
+{
+#ifndef CONFIG_TARGET_LIGHT_FPGA_FM_C910 /* for sillicon */
+	unsigned int tmp;
 
 	/* 1. double check all pll lock */
 	udelay(60);
@@ -124,24 +154,6 @@ void cpu_clk_config(int cpu_freq)
 	tmp = readl((void *)LIGHT_APCLK_ADDRBASE + 0x1f0);
 	tmp |= 0x2;
 	writel(tmp, (void *)LIGHT_APCLK_ADDRBASE + 0x1f0);
-
-	/* 4. update c910_cclk to 1500Mhz */
-	/* set cpu_pll1_foutpostdiv to 1500Mhz */
-	writel(0x20000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
-	writel(0x01207d01, (void *)LIGHT_APCLK_ADDRBASE + 0x10);
-	writel(0x23000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
-	udelay(3);
-	writel(0x03000000, (void *)LIGHT_APCLK_ADDRBASE + 0x14);
-	readl((void *)LIGHT_APCLK_ADDRBASE + 0x80);
-	readl((void *)LIGHT_APCLK_ADDRBASE + 0x80);
-	while(!(readl((void *)LIGHT_APCLK_ADDRBASE + 0x80) & 0x10));
-	udelay(11);
-
-	/* switch c910_cclk to cpu_pll1_foutpostdiv */
-	tmp = readl((void *)LIGHT_APCLK_ADDRBASE + 0x100);
-	tmp |= 0x1;
-	writel(tmp, (void *)LIGHT_APCLK_ADDRBASE + 0x100);
-	udelay(1);
 
 	/* set apb3_cpusys_pclk to ahb2_cpusys_hclk/2 */
 	/* CPU AHB 125MHz  CPU pclk 125MHz */

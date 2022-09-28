@@ -33,4 +33,10 @@ int clk_config(void);
 int clk_light_set_rate(const char *clk_name, enum clk_device_type clk_dev_type, unsigned long rate);
 unsigned long clk_light_get_rate(const char *clk_name, enum clk_device_type clk_dev_type);
 
+void ap_dpu_clk_endisable(bool en);
+void ap_hdmi_clk_endisable(bool en);
+void ap_mipi_dsi0_clk_endisable(bool en);
+void ap_mipi_dsi1_clk_endisable(bool en);
+void ap_peri_clk_disable(void);
+
 #endif

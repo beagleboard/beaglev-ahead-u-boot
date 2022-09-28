@@ -7,6 +7,7 @@
 #define _ASM_BOOT_MODE_H
 
 #define HEADER_SIZE   2048
+#define PUBKEY_HEADER_SIZE	0x1000
 
 typedef struct __attribute__ ((__packed__)) {
 	uint32_t entry_point;
@@ -32,13 +33,15 @@ typedef enum image_type {
 	T_AON = 3,
 	T_ROOTFS = 4,
 	T_TF = 2,
-	T_TEE = 5
+	T_TEE = 5,
+	T_UBOOT = 6
 } img_type_t;
 
 static const char header_magic[4] = {'T', 'H', 'E', 'D'};
 
 int csi_sec_init(void);
-int csi_sec_image_verify(img_type_t type, long addr);
 int image_have_head(unsigned long img_src_addr);
 int get_image_version(unsigned long img_src_addr);
+int get_image_size(unsigned long img_src_addr);
+int verify_customer_image(img_type_t type, long addr);
 #endif

@@ -21,14 +21,17 @@
 #include <fdtdec.h>
 #include "../common/uart.h"
 #include "../common/mini_printf.h"
+#include "lpddr-regu/ddr_regu.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
 extern void init_ddr(void);
 extern void cpu_clk_config(int cpu_freq);
+extern void sys_clk_config(void);
 extern void ddr_clk_config(int ddr_freq);
 extern void show_sys_clk(void);
 extern int riscv_get_time(u64 *time);
+extern int pmic_reset_apcpu_voltage(void);
 
 struct light_reset_list {
         u32 val;
@@ -42,7 +45,7 @@ static struct light_reset_list light_pre_reset_lists[] = {
 static struct light_reset_list light_post_reset_lists[] = {
 	{0x00000001, 0xFFFF0151B0}, /* AP rst_gen: NPU rst */
 	{0xFFFFFFFF, 0xFFFF041028}, /* DSP sys_reg: DSP rst */
-	{0x00000001, 0xFFFF529000}, /* VO sys_reg: GPU rst */
+	{0x00000002, 0xFFEF528000}, /* VO sys_reg: GPU rst */
 	{0x00000003, 0xFFEF528000}, /* VO sys_reg: GPU rst */
 	{0x00000007, 0xFFFF529004}, /* VO sys_reg: DPU rst */
 };
@@ -71,6 +74,7 @@ static void light_post_reset_config(void)
 
 	while (i < entry_size) {
 		writel(light_post_reset_lists[i].val, (void *)(light_post_reset_lists[i].reg));
+        udelay(2);
 		i++;
 	}
 }
@@ -298,7 +302,7 @@ void cpu_performance_enable(void)
 #define CSR_MHINT4	0x7ce
 	csr_write(CSR_SMPEN, 0x1);
 	csr_write(CSR_MHINT2_E, csr_read(CSR_MHINT2_E) | 0x20000);
-	csr_write(CSR_MHINT4, csr_read(CSR_MHINT4) | 0x10);
+	csr_write(CSR_MHINT4, csr_read(CSR_MHINT4) | 0x410);
 	csr_write(CSR_MCCR2, 0xe2490009);
 	csr_write(CSR_MHCR, 0x11ff);
 	csr_write(CSR_MXSTATUS, 0x638000);
@@ -351,18 +355,40 @@ void board_init_f(ulong dummy)
 	int ret;
 
 	light_pre_reset_config();
-	cpu_clk_config(0);
-	light_post_reset_config();
+	sys_clk_config();
 
 	ret = spl_early_init();
 	if (ret) {
 		printf("spl_early_init() failed: %d\n", ret);
 		hang();
 	}
+
 	arch_cpu_init_dm();
+	light_post_reset_config();
 	preloader_console_init();
 
+#ifdef CONFIG_PMIC_VOL_INIT
+	ret = pmic_ddr_regu_init();
+	if (ret) {
+		printf("%s pmic init failed %d \n",__func__,ret);
+		hang();
+	}
+
+	ret = pmic_ddr_set_voltage();
+	if (ret) {
+		printf("%s set ddr voltage failed \n",__func__);
+		hang();
+	}
+
+	ret = pmic_reset_apcpu_voltage();
+	if (ret) {
+		printf("%s set apcpu voltage failed \n",__func__);
+		hang();
+	}
+
+#endif
 	ddr_clk_config(0);
+	cpu_clk_config(0);
 
 	init_ddr();
 	setup_ddr_scramble();

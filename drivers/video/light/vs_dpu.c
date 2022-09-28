@@ -7,6 +7,7 @@
 #include <panel.h>
 #include <video.h>
 #include <video_bridge.h>
+#include <thead/clock_config.h>
 
 #include "../videomodes.h"
 
@@ -291,7 +292,8 @@ static int vs_dpu_video_probe(struct udevice *dev)
 	priv->base = dev_read_addr(dev);
 	if (priv->base == FDT_ADDR_T_NONE) {
 		dev_err(dev, "VS DPU base address is not found\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto error;
 	}
 
 	/* TODO: make sure apb clock is on */
@@ -299,7 +301,7 @@ static int vs_dpu_video_probe(struct udevice *dev)
 	ret = uclass_first_device_err(UCLASS_PANEL, &priv->panel);
 	if (ret) {
 		dev_err(dev, "LCD panel cannot be found : %d\n", ret);
-		return ret;
+		goto error;
 	}
 
 	ret = panel_get_display_timing(priv->panel, &priv->timing);
@@ -308,7 +310,7 @@ static int vs_dpu_video_probe(struct udevice *dev)
 				0, &priv->timing);
 		if (ret) {
 			dev_err(dev, "failed to get panel timing : %d\n", ret);
-			return ret;
+			goto error;
 		}
 	}
 
@@ -317,29 +319,31 @@ static int vs_dpu_video_probe(struct udevice *dev)
 					  &priv->video_bridge);
 		if (ret) {
 			dev_err(dev, "no video bridge for vs dpu : %d\n", ret);
-			return ret;
+			goto error;
 		}
 
 		ret = video_bridge_attach(priv->video_bridge);
 		if (ret) {
 			dev_err(dev, "vs dpu fail to attach video bridge : %d\n", ret);
-			return ret;
+			goto error;
 		}
 
 		/* enable video bridge */
 		ret = video_bridge_set_backlight(priv->video_bridge, 100);
 		if (ret) {
 			dev_err(dev, "video bridge fail to set backlight : %d\n", ret);
-			return ret;
+			goto error;
 		}
-	} else /* TODO: need improve */
-		return -ENOENT;
+	} else { /* TODO: need improve */
+		ret = -ENOENT;
+		goto error;
+	}
 
 	/* TODO: initialize dpu */
 	ret = vs_dpu_init(dev);
 	if (ret) {
 		dev_err(dev, "initialize dpu failed : %d\n", ret);
-		return ret;
+		goto error;
 	}
 
 	/* TODO: get pixel format */
@@ -351,6 +355,11 @@ static int vs_dpu_video_probe(struct udevice *dev)
 	video_set_flush_dcache(dev, true);
 
 	return 0;
+
+error:
+	ap_mipi_dsi0_clk_endisable(false);
+	ap_dpu_clk_endisable(false);
+	return ret;
 }
 
 static int vs_dpu_video_remove(struct udevice *dev)

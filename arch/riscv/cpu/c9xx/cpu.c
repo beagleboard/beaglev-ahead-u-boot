@@ -119,3 +119,28 @@ void invalid_dcache_range(unsigned long start, unsigned long end)
 
 	sync_is();
 }
+
+void icache_enable(void)
+{
+#ifdef CONFIG_SPL_RISCV_MMODE
+#ifdef CONFIG_TARGET_LIGHT_C910
+	asm volatile (
+        "csrr x29, mhcr\n\t"
+        "ori x28, x29, 0x1\n\t"
+        "csrw mhcr, x28\n\t"
+    );
+#endif
+#endif
+}
+
+void dcache_enable(void)
+{
+#ifdef CONFIG_SPL_RISCV_MMODE
+#ifdef CONFIG_TARGET_LIGHT_C910
+	asm volatile (
+        "li x29, 0x11ff\n\t"
+        "csrw mhcr, x29\n\t"
+    );
+#endif
+#endif
+}

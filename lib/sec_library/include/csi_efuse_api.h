@@ -23,6 +23,8 @@ typedef enum {
 
 int csi_efuse_api_int(void);
 
+int csi_efuse_api_uninit(void);
+
 int csi_efuse_get_secure_boot_st(sboot_st_t *sboot_st);
 
 int csi_efuse_get_digest_signature_scheme(uint32_t *digest_scheme, uint32_t *signature_scheme);

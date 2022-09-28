@@ -6,6 +6,22 @@
 
 if TARGET_LIGHT_C910
 
+config PMIC_VOL_INIT
+    bool "tuning light-ddr regulators"
+    default n
+
+config DDR_REGU_0V6
+    int "uint in uv"
+    default 640000
+
+config DDR_REGU_0V8
+    int "uint in uv"
+    default 820000
+
+config DDR_REGU_1V1
+    int "uint in uv"
+    default 1200000
+
 config SYS_CPU
     default "c9xx"
 
@@ -18,17 +34,19 @@ config SYS_BOARD
 config SYS_CONFIG_NAME
     default "light-c910"
 
-config LIGHT_SEC_BOOT
-    bool "light security boot"
+config LIGHT_SEC_UPGRADE
+    bool "light secure upgrade"
     default n
 
-config LIGHT_SEC_UPGRADE
-	bool "light secure upgrade"
-	default n
+config LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A
+    bool "light board-a security boot with verification"
+    default n
 
-config LIGHT_SEC_BOOT_NO_VERIFY
-	bool "light security boot without verification"
-	default n
+config LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B
+	bool "light board-b security boot with verification"
+
+config LIGHT_SEC_BOOT_WITH_VERIFY_ANT_EVT
+	bool "light ant evt security boot with verification"
 
 config TARGET_LIGHT_FPGA_FM_C910
     bool "light fullmask FPGA board"
@@ -46,14 +64,22 @@ config TARGET_LIGHT_FM_C910_VAL_B
     bool "light fullmask VAL board-b for system validation"
     default n
 
+config TARGET_LIGHT_FM_C910_VAL_ANT_EVT
+    bool "light fullmask for ant-evt board "
+    default n
+
+config TARGET_LIGHT_FM_C910_VAL_ANT_DISCRETE
+    bool "light fullmask for ant-evt board "
+    default n
+
 config SYS_TEXT_BASE
     default 0xc0000000 if RISCV_MMODE
     default 0x00200000 if RISCV_SMODE
 
 config SPL_TEXT_BASE
     hex
-    default 0xffe0000800 if LIGHT_SEC_BOOT
-    default 0xffe0000000 if !LIGHT_SEC_BOOT
+    default 0xffe0000800 if LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A || LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B || LIGHT_SEC_BOOT_WITH_VERIFY_ANT_EVT
+    default 0xffe0000000 if !(LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A || LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B || LIGHT_SEC_BOOT_WITH_VERIFY_ANT_EVT)
 
 config SPL_MAX_SIZE
     hex

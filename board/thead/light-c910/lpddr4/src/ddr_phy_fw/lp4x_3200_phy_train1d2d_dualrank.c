@@ -35057,16 +35057,14 @@ ddr_phy_reg_wr(0x20089,0x1);
 ddr_phy_reg_wr(0x20088,0x19);
 ddr_phy_reg_wr(0xc0080,0x2);
 ddr_phy_reg_wr(0xd0000,0x1);
+#ifndef CONFIG_DDR_H32_MODE
 ddr_phy_broadcast_en(0);
+#endif
 #ifdef CONFIG_DDR_MSG
 ddr_phy0_reg_wr(0xd0000,0x0);
-ddr_phy1_reg_wr(0xd0000,0x0);
 ddr_phy0_reg_wr(0xc0080,0x3);
-ddr_phy1_reg_wr(0xc0080,0x3);
 printf("PHY0 P Code %0x\n",ddr_phy0_reg_rd(0x20014));
 printf("PHY0 N Code %0x\n",ddr_phy0_reg_rd(0x20015));
-printf("PHY1 P Code %0x\n",ddr_phy1_reg_rd(0x20014));
-printf("PHY1 N Code %0x\n",ddr_phy1_reg_rd(0x20015));
 printf("Trained DFIMRL is %0x \n",ddr_phy_reg_rd(0x10020));
 printf("Trained DB1 DFIMRL is %0x \n",ddr_phy_reg_rd(0x11020));
 printf("Trained DB2 DFIMRL is %0x \n",ddr_phy_reg_rd(0x12020));
@@ -35077,10 +35075,16 @@ printf("PHY0 DB0 VREF        is %0x \n",ddr_phy_reg_rd(0x10140));
 printf("PHY0 DB1 VREF        is %0x \n",ddr_phy_reg_rd(0x11140));
 printf("PHY0 DB2 VREF        is %0x \n",ddr_phy_reg_rd(0x12140));
 printf("PHY0 DB3 VREF        is %0x \n",ddr_phy_reg_rd(0x13140));
+#ifndef CONFIG_DDR_H32_MODE
+ddr_phy1_reg_wr(0xd0000,0x0);
+ddr_phy1_reg_wr(0xc0080,0x3);
+printf("PHY1 P Code %0x\n",ddr_phy1_reg_rd(0x20014));
+printf("PHY1 N Code %0x\n",ddr_phy1_reg_rd(0x20015));
 printf("PHY1 DB0 VREF        is %0x \n",ddr_phy1_reg_rd(0x10140));
 printf("PHY1 DB1 VREF        is %0x \n",ddr_phy1_reg_rd(0x11140));
 printf("PHY1 DB2 VREF        is %0x \n",ddr_phy1_reg_rd(0x12140));
 printf("PHY1 DB3 VREF        is %0x \n",ddr_phy1_reg_rd(0x13140));
+#endif
 #endif
 //printf("DB0 Trained Rank0 Lower RxEnDly is   %0x \n",ddr_phy_reg_rd(0x10080));
 //printf("DB0 Trained Rank0 Upper RxEnDly is   %0x \n",ddr_phy_reg_rd(0x10180));

@@ -20,6 +20,7 @@ static void sdhci_phy_1_8v_init_no_pull(struct sdhci_host *host)
     sdhci_writel(host, 1, DWC_MSHC_PTR_PHY_R);
     sdhci_writeb(host, 1 << 4, PHY_SDCLKDL_CNFG_R);
     sdhci_writeb(host, 0x40, PHY_SDCLKDL_DC_R);
+    sdhci_writeb(host, 0xa, PHY_DLL_CNFG2_R);
 
     val = sdhci_readb(host, PHY_SDCLKDL_CNFG_R);
     val &= ~(1 << 4);
@@ -48,6 +49,7 @@ static void sdhci_phy_3_3v_init_no_pull(struct sdhci_host *host)
     sdhci_writel(host, 1, DWC_MSHC_PTR_PHY_R);
     sdhci_writeb(host, 1 << 4, PHY_SDCLKDL_CNFG_R);
     sdhci_writeb(host, 0x40, PHY_SDCLKDL_DC_R);
+    sdhci_writeb(host, 0xa, PHY_DLL_CNFG2_R);
 
     val = sdhci_readb(host, PHY_SDCLKDL_CNFG_R);
     val &= ~(1 << 4);
@@ -84,6 +86,7 @@ static void sdhci_phy_1_8v_init(struct sdhci_host *host)
     sdhci_writeb(host, 1 << UPDATE_DC, PHY_SDCLKDL_CNFG_R);
     //set delay lane
     sdhci_writeb(host, DELAY_LANE, PHY_SDCLKDL_DC_R);
+    sdhci_writeb(host, 0xa, PHY_DLL_CNFG2_R);
     //enable delay lane
     val = sdhci_readb(host, PHY_SDCLKDL_CNFG_R);
     val &= ~(1 << UPDATE_DC);
@@ -125,6 +128,7 @@ static void sdhci_phy_3_3v_init(struct sdhci_host *host)
     sdhci_writeb(host, 1 << UPDATE_DC, PHY_SDCLKDL_CNFG_R);
     //set delay lane
     sdhci_writeb(host, DELAY_LANE, PHY_SDCLKDL_DC_R);
+    sdhci_writeb(host, 0xa, PHY_DLL_CNFG2_R);
     //enable delay lane
     val = sdhci_readb(host, PHY_SDCLKDL_CNFG_R);
     val &= ~(1 << UPDATE_DC);
