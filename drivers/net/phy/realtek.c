@@ -106,6 +106,7 @@ static int rtl8211e_probe(struct phy_device *phydev)
 
 static int rtl8211f_probe(struct phy_device *phydev)
 {
+	printf("rtl8211f_probe start\n");
 #ifdef CONFIG_RTL8211F_PHY_FORCE_EEE_RXC_ON
 	phydev->flags |= PHY_RTL8211F_FORCE_EEE_RXC_ON;
 #endif
@@ -116,6 +117,7 @@ static int rtl8211f_probe(struct phy_device *phydev)
 /* RealTek RTL8211x */
 static int rtl8211x_config(struct phy_device *phydev)
 {
+	printf("rtl8211x_config start+++\n");
 	phy_write(phydev, MDIO_DEVAD_NONE, MII_BMCR, BMCR_RESET);
 
 	/* mask interrupt at init; if the interrupt is
@@ -386,7 +388,7 @@ static struct phy_driver RTL8211DN_driver = {
 /* Support for RTL8211F PHY */
 static struct phy_driver RTL8211F_driver = {
 	.name = "RealTek RTL8211F",
-	.uid = 0x1cc916,
+	.uid = 0x1cc878,
 	.mask = 0xffffff,
 	.features = PHY_GBIT_FEATURES,
 	.probe = &rtl8211f_probe,
