@@ -34,4 +34,4 @@ quiet_cmd_crosstools_strip = STRIP   $^
 $(obj)/.strip: $(obj)/fw_printenv
 	$(call cmd,crosstools_strip)
 
-always += .strip
+# always += .strip
