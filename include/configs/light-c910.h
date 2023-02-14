@@ -106,15 +106,19 @@
 #define ENV_STR_BOOT_DELAY	"bootdelay=0\0"
 #endif
 
+/* Generic */
+#define DEFAULT_LINUX_BOOT_ENV \
+	"fwaddr=0x10000000\0"
+
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"fdt_high=0xffffffffffffffff\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
 	"mmcdev=0\0" \
@@ -135,14 +139,14 @@
         "\0"
 
 #elif defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"fdt_high=0xffffffffffffffff\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
 	"mmcdev=0\0" \
@@ -163,14 +167,14 @@
         "\0"
 
 #elif defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_ANT_REF)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"fdt_high=0xffffffffffffffff\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
 	"mmcdev=0\0" \
@@ -192,7 +196,8 @@
 
 #else
 #if defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_A)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -201,7 +206,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"mmcpart=3\0" \
 	"kdump_buf=1M\0" \
@@ -218,7 +222,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_B)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -227,7 +232,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -249,7 +253,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_B_REF)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -258,7 +263,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -276,7 +280,8 @@
 	"bootcmd=run bootcmd_load; bootslave ; run finduuid; run set_bootargs; booti $kernel_addr - $dtb_addr;\0" \
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_B_POWER)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -285,7 +290,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -305,7 +309,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_REF)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -314,7 +319,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -334,7 +338,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_DISCRETE)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -343,7 +348,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -363,7 +367,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_BEAGLE)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -372,7 +377,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -392,7 +396,8 @@
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_A_REF)
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -401,7 +406,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
@@ -419,7 +423,8 @@
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $dtb_addr;\0" \
         "\0"
 #else
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CONFIG_EXTRA_ENV_SETTINGS					\
+	DEFAULT_LINUX_BOOT_ENV						\
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -428,7 +433,6 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
-	"fwaddr=0x10000000\0"\
 	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
