@@ -120,6 +120,11 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
+	"kernel_addr_r=0x00200000\0" \
+	"fdt_addr_r=0x04200000\0" \
+	"scriptaddr=0x04300000\0" \
+	"pxefile_addr_r=0x04400000\0" \
+	"ramdisk_addr_r=0x04500000\0" \
 	"mmcdev=0\0"
 
 #define DEFAULT_TEE_BOOT_ENV \
@@ -141,7 +146,7 @@
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
-	"fdt_file=light-a-val-sec.dtb\0" \
+	"fdtfile=light-a-val-sec.dtb\0" \
 	"uuid_rootfs=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=tf,size=50MiB,type=boot;name=tee,size=50MiB,type=boot;name=stash,size=50MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfs};name=data,size=-,type=linux\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
@@ -149,7 +154,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc 0:2 $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc 0:2 $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdt_file}; ext4load mmc 0:2 $kernel_addr Image\0" \
+	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdtfile}; ext4load mmc 0:2 $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; secboot; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -161,7 +166,7 @@
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
-	"fdt_file=light-b-product-sec.dtb\0" \
+	"fdtfile=light-b-product-sec.dtb\0" \
 	"uuid_rootfs=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=tf,size=50MiB,type=boot;name=tee,size=50MiB,type=boot;name=stash,size=50MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfs};name=data,size=-,type=linux\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
@@ -169,7 +174,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc 0:2 $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc 0:2 $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdt_file}; ext4load mmc 0:2 $kernel_addr Image\0" \
+	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdtfile}; ext4load mmc 0:2 $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; secboot; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -181,7 +186,7 @@
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
-	"fdt_file=light-ant-ref-sec.dtb\0" \
+	"fdtfile=light-ant-ref-sec.dtb\0" \
 	"uuid_rootfs=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=tf,size=50MiB,type=boot;name=tee,size=50MiB,type=boot;name=stash,size=50MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfs};name=data,size=-,type=linux\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
@@ -189,7 +194,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc 0:2 $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc 0:2 $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdt_file}; ext4load mmc 0:2 $kernel_addr Image\0" \
+	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:3 $tf_addr trust_firmware.bin; ext4load mmc 0:4 $tee_addr tee.bin;ext4load mmc 0:2 $fdt_addr ${fdtfile}; ext4load mmc 0:2 $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; secboot; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -202,7 +207,7 @@
 	"opensbi_addr=0x0\0" \
 	"mmcpart=3\0" \
 	"kdump_buf=1M\0" \
-	"fdt_file=light-a-product.dtb\0" \
+	"fdtfile=light-a-product.dtb\0" \
 	"uuid_rootfs=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfs};name=data,size=-,type=linux\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
@@ -210,7 +215,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc 0:2 $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc 0:2 $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:2 $opensbi_addr fw_dynamic.bin; ext4load mmc 0:2 $fdt_addr ${fdt_file}; ext4load mmc 0:2 $kernel_addr Image\0" \
+	"bootcmd_load=run load_aon;run load_c906_audio; ext4load mmc 0:2 $opensbi_addr fw_dynamic.bin; ext4load mmc 0:2 $fdt_addr ${fdtfile}; ext4load mmc 0:2 $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -225,7 +230,7 @@
 	"kdump_buf=1M\0" \
 	ENV_STR_BOOT_DELAY \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-b-product.dtb\0" \
+	"fdtfile=light-b-product.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -234,7 +239,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=${kernel_loglevel} eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file};ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image;\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile};ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image;\0" \
 	"bootcmd=run bootcmd_load; bootslave ; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -246,7 +251,7 @@
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-b-ref.dtb\0" \
+	"fdtfile=light-b-ref.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -255,7 +260,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file};ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image;\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile};ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image;\0" \
 	"bootcmd=run bootcmd_load; bootslave ; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_B_POWER)
@@ -267,7 +272,7 @@
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-b-power.dtb\0" \
+	"fdtfile=light-b-power.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -276,7 +281,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -289,7 +294,7 @@
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-ant-ref.dtb\0" \
+	"fdtfile=light-ant-ref.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -298,7 +303,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -311,7 +316,7 @@
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-ant-discrete.dtb\0" \
+	"fdtfile=light-ant-discrete.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -320,7 +325,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
@@ -333,7 +338,7 @@
 	"root_partition=rootfsA\0" \
 	"kdump_buf=500M\0" \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-beagle.dtb\0" \
+	"fdtfile=light-beagle.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -342,7 +347,7 @@
 	"set_bootargs=setenv bootargs root=/dev/mmcblk0p3 rootfstype=ext4 rootwait ro console=ttyS0,115200 earlycon clk_ignore_unused net.ifnames=0\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
 	DEFAULT_DISTRO_ENV						\
@@ -356,7 +361,7 @@
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-a-ref.dtb\0" \
+	"fdtfile=light-a-ref.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -365,7 +370,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
         "\0"
 #else
@@ -377,7 +382,7 @@
 	"root_partition=rootfsA\0" \
 	"kdump_buf=500M\0" \
 	"findpart=rollback; if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
-	"fdt_file=light-a-val.dtb\0" \
+	"fdtfile=light-a-val.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
@@ -386,7 +391,7 @@
 	"set_bootargs=setenv bootargs console=ttyS0,115200 root=PARTUUID=${uuid} rootfstype=ext4 rdinit=/sbin/init rootwait rw earlycon clk_ignore_unused loglevel=7 eth=$ethaddr rootrw=PARTLABEL=data init=/init rootinit=/sbin/init rootrwoptions=rw,noatime rootrwreset=${factory_reset} crashkernel=${kdump_buf}\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
-	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
+	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
         "\0"
