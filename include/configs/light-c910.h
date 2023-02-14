@@ -131,6 +131,9 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0"
 
+#define DEFAULT_DISTRO_ENV \
+	"distro_bootpart=2\0"
+
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
@@ -342,6 +345,8 @@
 	"bootcmd_load=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin; ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdt_file}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd=run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
 	"factory_reset=yes\0"\
+	DEFAULT_DISTRO_ENV						\
+	BOOTENV								\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_A_REF)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
