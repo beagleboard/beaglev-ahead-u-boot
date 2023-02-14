@@ -107,7 +107,6 @@
 #endif
 
 #define BOOT_TARGET_DEVICES(func) \
-	func(MMC, mmc, 1) \
 	func(MMC, mmc, 0)
 
 #include <config_distro_bootcmd.h>
@@ -349,7 +348,8 @@
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
 	"bootcmd_preload=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin\0" \
 	"bootcmd_load=ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
-	"bootcmd=run bootcmd_preload; run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
+	"bootcmd_old=run bootcmd_preload; run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
+	"bootcmd=run bootcmd_preload; run distro_bootcmd;\0" \
 	"factory_reset=yes\0"\
 	DEFAULT_DISTRO_ENV						\
 	BOOTENV								\
