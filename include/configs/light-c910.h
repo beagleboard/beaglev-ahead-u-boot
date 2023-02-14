@@ -113,7 +113,8 @@
 	"dtb_addr=0x01f00000\0" \
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
-	"audio_ram_addr=0xffc0000000\0"
+	"audio_ram_addr=0xffc0000000\0" \
+	"mmcdev=0\0"
 
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
@@ -121,7 +122,6 @@
 	"tf_addr=0x100000\0" \
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
-	"mmcdev=0\0" \
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
@@ -144,7 +144,6 @@
 	"tf_addr=0x100000\0" \
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
-	"mmcdev=0\0" \
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
@@ -167,7 +166,6 @@
 	"tf_addr=0x100000\0" \
 	"tee_addr=0x1c000000\0" \
 	"sec_upgrade_mode=0\0"\
-	"mmcdev=0\0" \
 	"mmcpart=6\0" \
 	"kdump_buf=1M\0" \
 	"uboot_version=0x0000000000000000\0"\
@@ -191,7 +189,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"mmcpart=3\0" \
 	"kdump_buf=1M\0" \
 	"fdt_file=light-a-product.dtb\0" \
@@ -212,7 +209,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	ENV_KERNEL_LOGLEVEL \
@@ -238,7 +234,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
@@ -260,7 +255,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
@@ -284,7 +278,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
@@ -308,7 +301,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"kdump_buf=1M\0" \
@@ -332,7 +324,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"kdump_buf=500M\0" \
@@ -356,7 +347,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"findpart=if test ${boot_partition} = bootB; then mmcbootpart=4; else mmcbootpart=2; fi; if test ${root_partition} = rootfsB; then mmcpart=5; else mmcpart=3; fi;\0" \
@@ -378,7 +368,6 @@
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
-	"mmcdev=0\0" \
 	"boot_partition=bootA\0" \
 	"root_partition=rootfsA\0" \
 	"kdump_buf=500M\0" \
