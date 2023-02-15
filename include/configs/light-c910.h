@@ -124,6 +124,7 @@
 	"scriptaddr=0x04300000\0" \
 	"pxefile_addr_r=0x04400000\0" \
 	"ramdisk_addr_r=0x04500000\0" \
+	"fdtoverlay_addr_r=0x04600000\0" \
 	"mmcdev=0\0"
 
 #define DEFAULT_TEE_BOOT_ENV \
