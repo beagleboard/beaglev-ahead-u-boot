@@ -341,7 +341,7 @@
 	"fdtfile=light-beagle.dtb\0" \
 	"uuid_rootfsA=80a5a8e9-c744-491a-93c1-4f4194fd690a\0" \
 	"uuid_rootfsB=80a5a8e9-c744-491a-93c1-4f4194fd690b\0" \
-	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=4000MiB,type=linux,uuid=${uuid_rootfsA};name=bootB,size=200MiB,type=boot;name=rootB,size=4000MiB,type=linux,uuid=${uuid_rootfsB};name=data,size=-,type=linux\0" \
+	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=-,type=linux,uuid=${uuid_rootfsA}\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
 	"gpt_partition=gpt write mmc ${mmcdev} $partitions\0" \
 	"set_bootargs=setenv bootargs root=/dev/mmcblk0p3 rootfstype=ext4 rootwait ro console=ttyS0,115200 earlycon clk_ignore_unused net.ifnames=0\0" \
