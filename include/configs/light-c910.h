@@ -122,11 +122,14 @@
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0"
 
+#define DEFAULT_SPLASH_BOOT_ENV \
+	"splashimage=0x30000000\0" \
+	"splashpos=m,m\0"
+
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -156,8 +159,7 @@
 #elif defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_B)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -187,8 +189,7 @@
 #elif defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_ANT_REF)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -219,8 +220,7 @@
 #if defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -241,8 +241,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_B)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -268,8 +267,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_B_REF)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -291,8 +289,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_B_POWER)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -316,8 +313,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_REF)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -343,8 +339,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_VAL_ANT_DISCRETE)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -368,8 +363,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_BEAGLE)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -393,8 +387,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_LPI4A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -418,8 +411,7 @@
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_A_REF)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
@@ -441,8 +433,7 @@
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
-	"splashimage=0x30000000\0" \
-	"splashpos=m,m\0" \
+	DEFAULT_SPLASH_BOOT_ENV						\
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
 	"mmcdev=0\0" \
