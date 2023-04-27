@@ -117,7 +117,8 @@
 /* Generic */
 #define DEFAULT_LINUX_BOOT_ENV \
 	"fdt_high=0xffffffffffffffff\0" \
-	"fwaddr=0x10000000\0"
+	"fwaddr=0x10000000\0" \
+	"kernel_addr=0x00200000\0"
 
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
@@ -126,7 +127,6 @@
 	"splashpos=m,m\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -160,7 +160,6 @@
 	"splashpos=m,m\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -194,7 +193,6 @@
 	"splashpos=m,m\0" \
 	"tf_addr=0x100000\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"tee_addr=0x1c000000\0" \
@@ -229,7 +227,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -254,7 +251,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -284,7 +280,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -310,7 +305,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -338,7 +332,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -368,7 +361,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -396,7 +388,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -424,7 +415,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -452,7 +442,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
@@ -478,7 +467,6 @@
 	"splashpos=m,m\0" \
 	"opensbi_addr=0x0\0" \
 	"dtb_addr=0x01f00000\0" \
-	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
 	"mmcdev=0\0" \
