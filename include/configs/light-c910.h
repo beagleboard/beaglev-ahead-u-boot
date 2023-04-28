@@ -114,6 +114,11 @@
 #define ENV_STR_BOOT_DELAY	"bootdelay=0\0"
 #endif
 
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 0)
+
+#include <config_distro_bootcmd.h>
+
 /* Generic */
 #define DEFAULT_LINUX_BOOT_ENV \
 	"fdt_high=0xffffffffffffffff\0" \
@@ -122,11 +127,20 @@
 	"kernel_addr=0x00200000\0" \
 	"aon_ram_addr=0xffffef8000\0" \
 	"audio_ram_addr=0xffc0000000\0" \
+	"kernel_addr_r=0x40200000\0" \
+	"fdt_addr_r=0x46000000\0" \
+	"scriptaddr=0x43900000\0" \
+	"pxefile_addr_r=0x45900000\0" \
+	"ramdisk_addr_r=0x46100000\0" \
+	"fdtoverlay_addr_r=0x4f000000\0" \
 	"mmcdev=0\0"
 
 #define DEFAULT_SPLASH_BOOT_ENV \
 	"splashimage=0x30000000\0" \
 	"splashpos=m,m\0"
+
+#define DEFAULT_DISTRO_ENV \
+	"distro_bootpart=2\0"
 
 #if defined (CONFIG_LIGHT_SEC_BOOT_WITH_VERIFY_VAL_A)
 #define CONFIG_EXTRA_ENV_SETTINGS					\
@@ -364,7 +378,10 @@
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
 	"bootcmd_preload=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin\0" \
 	"bootcmd_load=ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
-	"bootcmd=run bootcmd_preload; run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
+	"bootcmd_old=run bootcmd_preload; run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
+	"bootcmd=run bootcmd_preload; bootslave; run distro_bootcmd;\0" \
+	DEFAULT_DISTRO_ENV						\
+	BOOTENV								\
 	"factory_reset=yes\0"\
         "\0"
 #elif defined (CONFIG_TARGET_LIGHT_FM_C910_LPI4A)
