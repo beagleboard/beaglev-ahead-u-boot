@@ -373,7 +373,7 @@
 	"partitions=name=table,size=2031KB;name=boot,size=200MiB,type=boot;name=root,size=-,type=linux,uuid=${uuid_rootfsA}\0" \
 	"finduuid=part uuid mmc ${mmcdev}:${mmcpart} uuid\0" \
 	"gpt_partition=gpt write mmc ${mmcdev} $partitions\0" \
-	"set_bootargs=setenv bootargs root=/dev/mmcblk0p3 rootfstype=ext4 rootwait ro console=ttyS0,115200 earlycon clk_ignore_unused net.ifnames=0\0" \
+	"set_bootargs=setenv bootargs root=/dev/mmcblk0p3 rootfstype=ext4 rdinit=/sbin/init rootwait rw console=ttyS0,115200 earlycon clk_ignore_unused net.ifnames=0 init=/init rootinit=/sbin/init rootrwoptions=rw,noatime\0" \
 	"load_aon=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_aon_fpga.bin;cp.b $fwaddr $aon_ram_addr $filesize\0"\
 	"load_c906_audio=ext4load mmc ${mmcdev}:${mmcbootpart} $fwaddr light_c906_audio.bin;cp.b $fwaddr $audio_ram_addr $filesize\0"\
 	"bootcmd_preload=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin\0" \
