@@ -114,7 +114,9 @@
 #define ENV_STR_BOOT_DELAY	"bootdelay=0\0"
 #endif
 
+/* First try to boot from SD (index 1), then eMMC (index 0) */
 #define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 1) \
 	func(MMC, mmc, 0)
 
 #include <config_distro_bootcmd.h>
@@ -379,7 +381,7 @@
 	"bootcmd_preload=run findpart;run load_aon;run load_c906_audio; ext4load mmc ${mmcdev}:${mmcbootpart} $opensbi_addr fw_dynamic.bin\0" \
 	"bootcmd_load=ext4load mmc ${mmcdev}:${mmcbootpart} $fdt_addr ${fdtfile}; ext4load mmc ${mmcdev}:${mmcbootpart} $kernel_addr Image\0" \
 	"bootcmd_old=run bootcmd_preload; run bootcmd_load; bootslave; run finduuid; run set_bootargs; booti $kernel_addr - $fdt_addr;\0" \
-	"bootcmd=run bootcmd_preload; bootslave; run distro_bootcmd;\0" \
+	"bootcmd=run findpart; run distro_bootcmd;\0" \
 	DEFAULT_DISTRO_ENV						\
 	BOOTENV								\
 	"factory_reset=yes\0"\
